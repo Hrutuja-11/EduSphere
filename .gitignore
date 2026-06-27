@@ -13,8 +13,8 @@ env/
 # # Media
 # media/
 
-# Static Files
-staticfiles/
+# # Static Files
+# staticfiles/
 
 # Environment Variables
 .env
