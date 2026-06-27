@@ -10,8 +10,8 @@ env/
 # # SQLite
 # db.sqlite3
 
-# Media
-media/
+# # Media
+# media/
 
 # Static Files
 staticfiles/
