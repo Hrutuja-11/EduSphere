@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduSphere{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="brand">
+            <div class="brand-icon"></div>
+            EduSphere
+        </a>
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link">Home</a></li>
+            {% if user.is_authenticated %}
+                <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+                <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+                {% if user.role == 'student' %}
+                    <li><a href="{% url 'manage_portfolio' %}" class="nav-link">Smart Portfolio</a></li>
+                    <li><a href="{% url 'browse_jobs' %}" class="nav-link">Jobs & Internships</a></li>
+                {% elif user.role == 'placement_officer' %}
+                    <li><a href="{% url 'manage_placements' %}" class="nav-link">Manage Placements</a></li>
+                {% endif %}
+                <li>
+                    <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline" style="padding: 0.4rem 1rem; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-weight: 500;">Log out</button>
+                    </form>
+                </li>
+            {% else %}
+                <li><a href="{% url 'login' %}" class="nav-link">Log in</a></li>
+                <li><a href="{% url 'signup' %}" class="btn btn-primary">Sign up</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <div style="position: absolute; top: 85px; width: 100%; z-index: 100; pointer-events: none;">
+        {% if messages %}
+            <div class="container" style="padding: 1rem 5%; pointer-events: auto;">
+                {% for message in messages %}
+                    <div style="padding: 1rem; border-radius: 8px; background-color: #e0f2fe; color: #0284c7; margin-bottom: 1rem; text-align: center; border: 1px solid #bae6fd; font-weight: 500;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    {% block content %}
+    {% endblock %}
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <script>
+        // Optional dark mode toggle placeholder
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

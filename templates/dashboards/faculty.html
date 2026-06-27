@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Portal | EduSphere{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div>
+            <h1 style="font-size: 2.5rem; color: var(--secondary);">Faculty Portal</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">
+                Department: <strong>{{ department.name }}</strong> | Designation: <strong>{{ profile.designation }}</strong>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'profile' %}" class="btn btn-outline">Profile Settings</a>
+        </div>
+    </div>
+
+    <!-- Quick Overview Stat Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="card" style="text-align: center; border-left: 4px solid var(--primary);">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Pending Projects</p>
+            <h3 style="font-size: 2rem; color: var(--secondary); margin-top: 0.5rem;">{{ pending_projects.count }}</h3>
+        </div>
+        <div class="card" style="text-align: center; border-left: 4px solid #b45309;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Pending Certs</p>
+            <h3 style="font-size: 2rem; color: var(--secondary); margin-top: 0.5rem;">{{ pending_certs.count }}</h3>
+        </div>
+        <div class="card" style="text-align: center; border-left: 4px solid #15803d;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Pending Awards</p>
+            <h3 style="font-size: 2rem; color: var(--secondary); margin-top: 0.5rem;">{{ pending_achievements.count }}</h3>
+        </div>
+        <div class="card" style="text-align: center; border-left: 4px solid var(--secondary);">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Courses Managed</p>
+            <h3 style="font-size: 2rem; color: var(--secondary); margin-top: 0.5rem;">{{ courses.count }}</h3>
+        </div>
+    </div>
+
+    <!-- Tabbed Panels for Verifications, Courses, and Students -->
+    <div class="tab-container">
+        <button class="tab-btn active" onclick="switchTab('verifications')">Pending Verifications</button>
+        <button class="tab-btn" onclick="switchTab('courses')">Class & Academic Management</button>
+        <button class="tab-btn" onclick="switchTab('students')">Student Endorsements</button>
+    </div>
+
+    <!-- 1. VERIFICATIONS PANEL -->
+    <div id="verifications-panel" class="tab-panel active">
+        <!-- Projects verification table -->
+        <h3 style="margin-bottom: 1rem; color: var(--secondary);">Student Projects ({{ pending_projects.count }})</h3>
+        {% if pending_projects %}
+            <div class="table-responsive" style="margin-bottom: 2.5rem;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Project Title</th>
+                            <th>Technologies</th>
+                            <th>Link</th>
+                            <th>Decision & Comments</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pending_projects %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.student.user.first_name|default:item.student.user.username }}</strong><br>
+                                    <span style="font-size: 0.85rem; color: var(--text-muted);">{{ item.student.enrollment_number }}</span>
+                                </td>
+                                <td>
+                                    <strong style="color: var(--secondary);">{{ item.title }}</strong><br>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted); max-width: 350px;">{{ item.description }}</p>
+                                </td>
+                                <td><span style="font-size: 0.85rem; background: #f1f5f9; padding: 0.25rem 0.5rem; border-radius: 4px;">{{ item.technologies_used }}</span></td>
+                                <td>
+                                    {% if item.project_link %}
+                                        <a href="{{ item.project_link }}" target="_blank" style="color: var(--primary); text-decoration: underline;">GitHub</a>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'verify_item' 'project' item.id 'approve' %}" style="display:inline; margin-bottom: 0.5rem;">
+                                        {% csrf_token %}
+                                        <input type="text" name="faculty_comments" placeholder="Comments (optional)..." style="width: 200px; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;">
+                                        <button type="submit" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #dcfce7; color: #166534; border-color: #bbf7d0;">Approve</button>
+                                    </form>
+                                    <form method="post" action="{% url 'verify_item' 'project' item.id 'reject' %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #fee2e2; color: #991b1b; border-color: #fecaca;">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-style: italic;">No pending student projects.</p>
+        {% endif %}
+
+        <!-- Certifications verification table -->
+        <h3 style="margin-bottom: 1rem; color: var(--secondary);">Student Certifications ({{ pending_certs.count }})</h3>
+        {% if pending_certs %}
+            <div class="table-responsive" style="margin-bottom: 2.5rem;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Certification Name</th>
+                            <th>Issuer</th>
+                            <th>Credential ID/URL</th>
+                            <th>Decision & Comments</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pending_certs %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.student.user.username }}</strong><br>
+                                    <span style="font-size: 0.85rem; color: var(--text-muted);">{{ item.student.enrollment_number }}</span>
+                                </td>
+                                <td><strong>{{ item.name }}</strong></td>
+                                <td>{{ item.issuing_organization }}</td>
+                                <td>
+                                    {% if item.credential_url %}
+                                        <a href="{{ item.credential_url }}" target="_blank" style="color: var(--primary); text-decoration: underline;">{{ item.credential_id|default:"Verify URL" }}</a>
+                                    {% else %}
+                                        {{ item.credential_id|default:"-" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'verify_item' 'certification' item.id 'approve' %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="text" name="faculty_comments" placeholder="Comments..." style="width: 200px; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;">
+                                        <button type="submit" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #dcfce7; color: #166534; border-color: #bbf7d0;">Approve</button>
+                                    </form>
+                                    <form method="post" action="{% url 'verify_item' 'certification' item.id 'reject' %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #fee2e2; color: #991b1b; border-color: #fecaca;">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); margin-bottom: 2.5rem; font-style: italic;">No pending certifications.</p>
+        {% endif %}
+
+        <!-- Achievements verification table -->
+        <h3 style="margin-bottom: 1rem; color: var(--secondary);">Student Achievements & Extracurriculars ({{ pending_achievements.count }})</h3>
+        {% if pending_achievements %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Achievement Title</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th>Decision & Comments</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pending_achievements %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.student.user.username }}</strong><br>
+                                    <span style="font-size: 0.85rem; color: var(--text-muted);">{{ item.student.enrollment_number }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ item.title }}</strong><br>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted);">{{ item.description }}</p>
+                                </td>
+                                <td><span class="status-badge status-info">{{ item.get_category_display }}</span></td>
+                                <td>{{ item.date|date:"M d, Y" }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'verify_item' 'achievement' item.id 'approve' %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="text" name="faculty_comments" placeholder="Comments..." style="width: 200px; padding: 0.4rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.85rem;">
+                                        <button type="submit" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #dcfce7; color: #166534; border-color: #bbf7d0;">Approve</button>
+                                    </form>
+                                    <form method="post" action="{% url 'verify_item' 'achievement' item.id 'reject' %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #fee2e2; color: #991b1b; border-color: #fecaca;">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No pending student achievements.</p>
+        {% endif %}
+    </div>
+
+    <!-- 2. COURSES PANEL -->
+    <div id="courses-panel" class="tab-panel">
+        <h3 style="margin-bottom: 1.5rem; color: var(--secondary);">Department Courses Assigned</h3>
+        {% if courses %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+                {% for course in courses %}
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <span style="font-size: 0.8rem; background: #e0f2fe; color: #0284c7; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 700;">{{ course.code }}</span>
+                                <h4 style="margin-top: 0.5rem; font-size: 1.15rem; font-weight: 700; color: var(--secondary);">{{ course.name }}</h4>
+                            </div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">{{ course.credits }} Credits</span>
+                        </div>
+                        <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Target Semester: Semester {{ course.semester }}</p>
+                        
+                        <div style="margin-top: 0.5rem;">
+                            {% if course.faculty == profile %}
+                                <span class="status-badge status-success" style="font-size: 0.75rem; display: inline-block;">Assigned to You</span>
+                            {% elif course.faculty %}
+                                <span class="status-badge status-warning" style="font-size: 0.75rem; display: inline-block;">
+                                    Taught by: {{ course.faculty.user.first_name|default:course.faculty.user.username }}
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-danger" style="font-size: 0.75rem; display: inline-block;">Unassigned</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                            {% if course.faculty == profile %}
+                                <a href="{% url 'mark_attendance' course.id %}" class="btn btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; text-align: center;">Mark Attendance</a>
+                                <a href="{% url 'upload_grades' course.id %}" class="btn btn-outline" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; text-align: center;">Upload Grades</a>
+                            {% else %}
+                                <button class="btn btn-primary" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; opacity: 0.55; cursor: not-allowed;" disabled title="Only the assigned faculty can mark attendance">Mark Attendance</button>
+                                <button class="btn btn-outline" style="flex: 1; padding: 0.5rem; font-size: 0.85rem; opacity: 0.55; cursor: not-allowed;" disabled title="Only the assigned faculty can upload grades">Upload Grades</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No courses found in your department.</p>
+        {% endif %}
+    </div>
+
+    <!-- 3. STUDENTS DIRECTORY PANEL -->
+    <div id="students-panel" class="tab-panel">
+        <h3 style="margin-bottom: 1.5rem; color: var(--secondary);">Department Student Talent Pool & Endorsements</h3>
+        {% if students %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Enrollment No.</th>
+                            <th>Current CGPA</th>
+                            <th>Completed Semester</th>
+                            <th>Endorsement Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                            <tr>
+                                <td>
+                                    <strong>{{ student.user.first_name|default:student.user.username }}</strong><br>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ student.user.email }}</span>
+                                </td>
+                                <td><strong>{{ student.enrollment_number }}</strong></td>
+                                <td><span style="font-size: 1.1rem; font-weight: 700; color: var(--secondary);">{{ student.cgpa }}</span></td>
+                                <td>Semester {{ student.current_semester }}</td>
+                                <td>
+                                    <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openEndorseModal('{{ student.id }}', '{{ student.user.username }}')">
+                                        + Add Endorsement
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No students registered in this department.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Endorsement Modal Overlay -->
+<div class="modal-overlay" id="endorse-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">Add Endorsement for <span id="student-name-modal"></span></h3>
+            <button class="modal-close" onclick="closeEndorseModal()">&times;</button>
+        </div>
+        <form id="endorse-form" method="post" action="">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Relationship to Student</label>
+                <select name="relationship" class="form-control" required>
+                    <option value="mentor">Mentor</option>
+                    <option value="project_guide">Project Guide</option>
+                    <option value="class_teacher">Class Teacher</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Endorsement Content</label>
+                <textarea name="content" class="form-control" rows="5" placeholder="Write a supportive recommendation detailing their academic capability, project performance, or teamwork skills..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Submit Recommendation</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        
+        event.currentTarget.classList.add('active');
+        document.getElementById(tabId + '-panel').classList.add('active');
+    }
+
+    function openEndorseModal(studentId, username) {
+        const modal = document.getElementById('endorse-modal');
+        const studentSpan = document.getElementById('student-name-modal');
+        const form = document.getElementById('endorse-form');
+        
+        studentSpan.textContent = username;
+        form.action = '/portfolio/endorse/' + studentId + '/';
+        modal.classList.add('active');
+    }
+
+    function closeEndorseModal() {
+        document.getElementById('endorse-modal').classList.remove('active');
+    }
+</script>
+{% endblock %}

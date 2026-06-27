@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Attendance | {{ course.code }} | EduSphere{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem; max-width: 800px;">
+    
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline" style="margin-bottom: 1.5rem;">&larr; Back to Dashboard</a>
+        <h1 style="font-size: 2.25rem; color: var(--secondary);">Mark Daily Attendance</h1>
+        <p style="color: var(--text-muted); font-size: 1.05rem;">
+            Course: <strong>{{ course.code }} - {{ course.name }}</strong> | Credits: <strong>{{ course.credits }}</strong>
+        </p>
+    </div>
+
+    <div class="card">
+        <form method="post" action="">
+            {% csrf_token %}
+            
+            <div class="form-group" style="max-width: 300px; margin-bottom: 2rem;">
+                <label class="form-label">Attendance Log Date</label>
+                <input type="date" name="date" class="form-control" value="{{ today }}" required>
+            </div>
+
+            <h3 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Enrolled Students List</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Check the boxes next to the students who are <strong>Present</strong> today. Leave unchecked for Absent.</p>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px; text-align: center;">Present</th>
+                            <th>Student Name</th>
+                            <th>Enrollment Number</th>
+                            <th>Current Attendance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if enrollments %}
+                            {% for enroll in enrollments %}
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <input type="checkbox" name="present_students" value="{{ enroll.id }}" checked style="width: 20px; height: 20px; cursor: pointer;">
+                                    </td>
+                                    <td>
+                                        <strong>{{ enroll.student.user.first_name|default:enroll.student.user.username }}</strong><br>
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">{{ enroll.student.user.email }}</span>
+                                    </td>
+                                    <td><strong>{{ enroll.student.enrollment_number }}</strong></td>
+                                    <td>{{ enroll.attendance_percentage }}%</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No students enrolled in this course.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Save Attendance Sheet</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

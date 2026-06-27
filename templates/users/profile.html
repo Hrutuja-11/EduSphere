@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Settings | EduSphere{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 2.5rem;
+        margin: 6rem auto 3rem;
+        max-width: 1200px;
+        padding: 0 1.5rem;
+    }
+    
+    .profile-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        text-align: center;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+    
+    .profile-avatar-container {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        margin: 0 auto 1.5rem;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid var(--border);
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: border-color 0.3s;
+    }
+
+    .profile-avatar-container:hover {
+        border-color: var(--primary);
+    }
+    
+    .profile-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .profile-avatar-placeholder {
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+    
+    .profile-name {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--secondary);
+        margin-bottom: 0.25rem;
+    }
+    
+    .profile-role-badge {
+        display: inline-block;
+        padding: 0.35rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 0.5rem;
+    }
+    
+    .form-section-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        margin-bottom: 2rem;
+    }
+    
+    .form-section-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--secondary);
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--background);
+        padding-bottom: 0.75rem;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-layout {
+            grid-template-columns: 1fr;
+        }
+        .profile-card {
+            position: static;
+        }
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .form-group label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--text-main);
+    }
+    
+    .form-group small {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+    
+    .errorlist {
+        list-style: none;
+        color: #ef4444;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-layout">
+        
+        <!-- Left Side: Profile Card -->
+        <div class="profile-card">
+            <div class="profile-avatar-container">
+                {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" alt="{{ user.username }} Avatar" class="profile-avatar">
+                {% else %}
+                    <div class="profile-avatar-placeholder">
+                        {{ user.username|slice:":2" }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <h2 class="profile-name">{{ user.first_name|default:user.username }} {{ user.last_name|default:"" }}</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">@{{ user.username }}</p>
+            
+            <span class="profile-role-badge 
+                {% if role == 'student' %}status-success
+                {% elif role == 'faculty' %}status-info
+                {% elif role == 'hod' %}status-warning
+                {% else %}status-danger{% endif %}">
+                {{ user.get_role_display }}
+            </span>
+            
+            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; text-align: left; font-size: 0.85rem; color: var(--text-muted);">
+                <p style="margin-bottom: 0.5rem;">Registered Email: <strong style="color: var(--secondary);">{{ user.email }}</strong></p>
+                <p>Date Joined: <strong style="color: var(--secondary);">{{ user.date_joined|date:"M d, Y" }}</strong></p>
+            </div>
+        </div>
+        
+        <!-- Right Side: Edit Forms -->
+        <div>
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                
+                <!-- Personal Settings Section -->
+                <div class="form-section-card">
+                    <h3 class="form-section-title">Personal Settings</h3>
+                    
+                    <div class="form-grid">
+                        {% for field in user_form %}
+                            <div class="form-group {% if field.name == 'profile_picture' %}grid-colspan-2{% endif %}" 
+                                 {% if field.name == 'profile_picture' %}style="grid-column: span 2;"{% endif %}>
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small>{{ field.help_text }}</small>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <small style="color: #ef4444; font-weight: 500;">{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Role Specific Settings Section -->
+                {% if profile_form %}
+                    <div class="form-section-card">
+                        <h3 class="form-section-title">Role-Specific Settings ({{ user.get_role_display }})</h3>
+                        
+                        <div class="form-grid">
+                            {% for field in profile_form %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small>{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {% for error in field.errors %}
+                                        <small style="color: #ef4444; font-weight: 500;">{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <!-- Submit Action Buttons -->
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-bottom: 4rem;">
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary" style="background: var(--primary-dark);">Save Profile Changes</button>
+                </div>
+                
+            </form>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

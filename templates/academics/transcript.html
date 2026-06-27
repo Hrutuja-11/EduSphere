@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Transcript | {{ student.user.username }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .transcript-sheet {
+        background: white;
+        border: 2px solid #334155;
+        border-radius: 8px;
+        padding: 3rem;
+        margin: 6rem auto 3rem;
+        max-width: 900px;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        color: black;
+    }
+    .transcript-header {
+        text-align: center;
+        border-bottom: 3px double #334155;
+        padding-bottom: 2rem;
+        margin-bottom: 2.5rem;
+    }
+    .university-title {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    .sheet-meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+        font-size: 0.95rem;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1.5rem;
+    }
+    .sem-heading {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--primary);
+        padding-left: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-bottom: 4rem;">
+    
+    <div class="no-print" style="max-width: 900px; margin: 6rem auto -5rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline">&larr; Back to Dashboard</a>
+        <button class="btn btn-primary" onclick="window.print()">Print Transcript / Export PDF</button>
+    </div>
+
+    <div class="transcript-sheet">
+        <!-- University Branding -->
+        <div class="transcript-header">
+            <div class="university-title">EduSphere Institute of Technology</div>
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.1em;">Office of the Registrar • Official Academic Transcript</p>
+        </div>
+
+        <!-- Student Meta Details -->
+        <div class="sheet-meta-grid">
+            <div>
+                <p>Candidate Name: <strong>{{ student.user.first_name|default:student.user.username }} {{ student.user.last_name|default:"" }}</strong></p>
+                <p>Enrollment Number: <strong>{{ student.enrollment_number }}</strong></p>
+                <p>Department: <strong>{{ student.department.name }} ({{ student.department.code }})</strong></p>
+            </div>
+            <div style="text-align: right;">
+                <p>Graduation Year: <strong>{{ student.graduation_year }}</strong></p>
+                <p>Calculated GPA: <strong style="font-size: 1.25rem; color: #0284c7;">{{ student.cgpa }} / 10.00</strong></p>
+                <p>Average Attendance: <strong>{{ avg_attendance }}%</strong></p>
+            </div>
+        </div>
+
+        <!-- Course Listings -->
+        <div>
+            <h3 style="font-size: 1.35rem; font-weight: 800; border-bottom: 2px solid #000; padding-bottom: 0.5rem; color: #0f172a; margin-bottom: 1.5rem;">Academic Course History</h3>
+            
+            <div class="table-responsive" style="border: 1px solid #475569;">
+                <table class="table">
+                    <thead>
+                        <tr style="background: #f1f5f9;">
+                            <th style="color: black; font-weight: 700;">Course Code</th>
+                            <th style="color: black; font-weight: 700;">Course Title</th>
+                            <th style="color: black; font-weight: 700;">Semester</th>
+                            <th style="color: black; font-weight: 700;">Credits</th>
+                            <th style="color: black; font-weight: 700;">Attendance</th>
+                            <th style="color: black; font-weight: 700; text-align: center;">Grade Secured</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if enrollments %}
+                            {% for enroll in enrollments %}
+                                <tr>
+                                    <td><strong>{{ enroll.course.code }}</strong></td>
+                                    <td>{{ enroll.course.name }}</td>
+                                    <td>Semester {{ enroll.semester }}</td>
+                                    <td>{{ enroll.course.credits }}</td>
+                                    <td>{{ enroll.attendance_percentage }}%</td>
+                                    <td style="text-align: center;">
+                                        {% if enroll.grade %}
+                                            <strong style="font-size: 1.15rem; color: #0369a1;">{{ enroll.grade }}</strong>
+                                        {% else %}
+                                            <span style="font-style: italic; color: var(--text-muted);">In progress</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No enrollment records registered.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Print Footer Signature lines -->
+        <div style="margin-top: 5rem; display: flex; justify-content: space-between; font-size: 0.85rem; border-top: 1px solid #ccc; padding-top: 2rem;">
+            <div>
+                <p>Date Generated: <strong>{% now "F j, Y" %}</strong></p>
+                <p style="color: var(--text-muted); font-style: italic;">Computer-generated, official verified record</p>
+            </div>
+            <div style="text-align: center; min-width: 200px;">
+                <div style="height: 40px; border-bottom: 1px solid #000; margin-bottom: 0.5rem; display: flex; align-items: flex-end; justify-content: center; font-style: italic; color: #475569; font-weight: 600;">Registrar Board</div>
+                <p>Controller of Examinations</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

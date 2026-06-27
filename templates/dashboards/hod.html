@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}HOD Dashboard | EduSphere{% endblock %}
+
+{% block extra_head %}
+<style>
+    .timetable-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+    }
+    .hod-directory-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    @media (max-width: 992px) {
+        .timetable-grid {
+            grid-template-columns: 1fr;
+        }
+        .hod-directory-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div>
+            <h1 style="font-size: 2.5rem; color: var(--secondary);">Department Overview</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">
+                Head of Department: <strong>{{ department.name }} ({{ department.code }})</strong> | Office: <strong>{{ profile.office_location }}</strong>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'profile' %}" class="btn btn-outline">Profile Settings</a>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard Widgets -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3.5rem;">
+        <div class="card" style="border-left: 4px solid var(--primary);">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Average Class CGPA</p>
+            <h3 style="font-size: 2.25rem; color: var(--secondary); margin-top: 0.5rem;">{{ avg_cgpa }} / 10.0</h3>
+            <span style="font-size: 0.8rem; color: #16a34a; font-weight: 600;">Overall student average</span>
+        </div>
+        
+        <div class="card" style="border-left: 4px solid #15803d;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Department Attendance</p>
+            <h3 style="font-size: 2.25rem; color: var(--secondary); margin-top: 0.5rem;">{{ avg_attendance }}%</h3>
+            <span style="font-size: 0.8rem; color: {% if avg_attendance < 75 %}#ef4444{% else %}#16a34a{% endif %}; font-weight: 600;">
+                {% if avg_attendance < 75 %}Critical attendance level{% else %}Satisfies university standards{% endif %}
+            </span>
+        </div>
+
+        <div class="card" style="border-left: 4px solid #b45309;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Placed Rate</p>
+            <h3 style="font-size: 2.25rem; color: var(--secondary); margin-top: 0.5rem;">{{ placement_rate }}%</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">{{ placed_count }} of {{ total_students }} students placed</span>
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--secondary);">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Total Faculty</p>
+            <h3 style="font-size: 2.25rem; color: var(--secondary); margin-top: 0.5rem;">{{ faculty_members.count }}</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Active academic members</span>
+        </div>
+    </div>
+
+    <!-- Tabbed navigation -->
+    <div class="tab-container" style="margin-bottom: 2rem;">
+        <button class="tab-btn active" onclick="switchTab('overview')">Department Overview</button>
+        <button class="tab-btn" onclick="switchTab('courses')">Manage Courses & Faculty</button>
+        <button class="tab-btn" onclick="switchTab('timetable')">Manage Timetable</button>
+    </div>
+
+    <!-- Overview Panel -->
+    <div id="overview-panel" class="tab-panel active">
+        <!-- HOD Double Columns Directory -->
+        <div class="hod-directory-grid">
+            
+            <!-- Faculty directory -->
+            <div>
+                <h3 style="margin-bottom: 1rem; color: var(--secondary);">Department Faculty</h3>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Faculty Name</th>
+                                <th>Designation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if faculty_members %}
+                                {% for fac in faculty_members %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ fac.user.first_name|default:fac.user.username }}</strong><br>
+                                            <span style="font-size: 0.8rem; color: var(--text-muted);">ID: {{ fac.employee_id }}</span>
+                                        </td>
+                                        <td><span style="font-size: 0.85rem; background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.5rem; border-radius: 4px;">{{ fac.designation }}</span></td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="2" style="text-align: center; color: var(--text-muted); padding: 1rem;">No faculty registered.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Student talent directory -->
+            <div>
+                <h3 style="margin-bottom: 1rem; color: var(--secondary);">Student Performance Directory</h3>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>GPA</th>
+                                <th>Semester</th>
+                                <th>Skills Listed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if students %}
+                                {% for student in students %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ student.user.first_name|default:student.user.username }}</strong><br>
+                                            <span style="font-size: 0.8rem; color: var(--text-muted);">{{ student.enrollment_number }}</span>
+                                        </td>
+                                        <td><strong>{{ student.cgpa }}</strong></td>
+                                        <td>Semester {{ student.current_semester }}</td>
+                                        <td>
+                                            {% if student.skills.all %}
+                                                <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                                                    {% for skill in student.skills.all|slice:":3" %}
+                                                        <span style="font-size: 0.75rem; background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px;">{{ skill.name }}</span>
+                                                    {% endfor %}
+                                                    {% if student.skills.count > 3 %}
+                                                        <span style="font-size: 0.75rem; color: var(--text-muted);">+{{ student.skills.count|add:"-3" }} more</span>
+                                                    {% endif %}
+                                                </div>
+                                            {% else %}
+                                                <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No skills</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No students registered.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Courses & Faculty Panel -->
+    <div id="courses-panel" class="tab-panel">
+        <div class="timetable-grid">
+            
+            <!-- Left: Courses List & Faculty Assignment -->
+            <div>
+                <h3 style="margin-bottom: 1.5rem; color: var(--secondary);">Department Courses & Instructors</h3>
+                <div class="card" style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div class="table-responsive" style="margin-bottom: 0;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">Course Code</th>
+                                    <th style="width: 35%;">Course Name</th>
+                                    <th style="width: 15%; text-align: center;">Credits / Sem</th>
+                                    <th style="width: 30%;">Assigned Faculty</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if courses %}
+                                    {% for course in courses %}
+                                        <tr>
+                                            <td><strong>{{ course.code }}</strong></td>
+                                            <td>{{ course.name }}</td>
+                                            <td style="text-align: center;">
+                                                <span class="status-badge status-info" style="font-size: 0.75rem;">Sem {{ course.semester }}</span>
+                                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">{{ course.credits }} Credits</div>
+                                            </td>
+                                            <td>
+                                                <form method="POST" action="{% url 'assign_faculty' course.id %}" style="display: flex; gap: 0.5rem; align-items: center;">
+                                                    {% csrf_token %}
+                                                    <select name="faculty_id" onchange="this.form.submit()" class="form-control" style="padding: 0.25rem 0.5rem; font-size: 0.85rem; height: auto;">
+                                                        <option value="">-- Unassigned --</option>
+                                                        {% for fac in faculty_members %}
+                                                            <option value="{{ fac.id }}" {% if course.faculty == fac %}selected{% endif %}>
+                                                                {{ fac.user.first_name|default:fac.user.username }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 2rem;">No courses registered in this department yet.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Course Add Form -->
+            <div>
+                <div class="card" style="position: sticky; top: 100px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--secondary);">Create New Course</h3>
+                    <form method="POST" action="{% url 'add_course' %}" novalidate>
+                        {% csrf_token %}
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            {% for field in course_form %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small style="color: var(--text-muted); font-size: 0.8rem;">{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <ul class="errorlist" style="list-style: none; color: #ef4444; font-size: 0.85rem; margin-top: 0.25rem; font-weight: 500; padding-left: 0;">
+                                            {% for error in field.errors %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;">Create Customizable Course</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Timetable Panel -->
+    <div id="timetable-panel" class="tab-panel">
+        <div class="timetable-grid">
+            
+            <!-- Left: Timetable List/Grid -->
+            <div>
+                <h3 style="margin-bottom: 1.5rem; color: var(--secondary);">Weekly Timetable Entries</h3>
+                {% regroup timetable_entries by semester as semester_list %}
+                
+                {% for sem in semester_list %}
+                    <div class="card" style="margin-bottom: 2rem; border-top: 3px solid var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                        <h4 style="font-size: 1.15rem; font-weight: 800; color: var(--secondary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">
+                            Semester {{ sem.grouper }} Timetable
+                        </h4>
+                        <div class="table-responsive" style="margin-bottom: 0;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%;">Day</th>
+                                        <th style="width: 30%;">Time Slot</th>
+                                        <th style="width: 35%;">Course</th>
+                                        <th style="width: 15%; text-align: center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in sem.list %}
+                                        <tr>
+                                            <td><strong>{{ entry.day }}</strong></td>
+                                            <td><span class="status-badge status-info" style="font-size: 0.75rem;">{{ entry.slot }}</span></td>
+                                            <td>
+                                                <strong style="color: var(--primary-dark);">{{ entry.course.code }}</strong><br>
+                                                <span style="font-size: 0.85rem; color: var(--text-main);">{{ entry.course.name }}</span>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <form method="POST" action="{% url 'delete_timetable_entry' entry.id %}" onsubmit="return confirm('Are you sure you want to delete this timetable slot?');" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline" style="color: #ef4444; border-color: #fca5a5; padding: 0.2rem 0.5rem; font-size: 0.75rem;">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="card" style="text-align: center; padding: 3rem; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <svg style="width: 48px; height: 48px; color: var(--text-muted); margin-bottom: 1rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <h4 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.5rem;">No timetable slots scheduled yet.</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Use the scheduler form on the right to add classes for your department's courses.</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Right: Timetable Add Form -->
+            <div>
+                <div class="card" style="position: sticky; top: 100px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <h3 style="margin-bottom: 1.5rem; color: var(--secondary);">Schedule Class Slot</h3>
+                    <form method="POST" action="{% url 'add_timetable_entry' %}" novalidate>
+                        {% csrf_token %}
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            {% for field in timetable_form %}
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}" style="font-weight: 600; font-size: 0.9rem; color: var(--text-main);">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <small style="color: var(--text-muted); font-size: 0.8rem;">{{ field.help_text }}</small>
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <ul class="errorlist" style="list-style: none; color: #ef4444; font-size: 0.85rem; margin-top: 0.25rem; font-weight: 500; padding-left: 0;">
+                                            {% for error in field.errors %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem; width: 100%;">Add Slot to Schedule</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        
+        event.currentTarget.classList.add('active');
+        document.getElementById(tabId + '-panel').classList.add('active');
+    }
+</script>
+{% endblock %}

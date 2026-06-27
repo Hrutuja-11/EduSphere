@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.title }} at {{ job.company.name }} | EduSphere{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem; max-width: 800px;">
+    
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'browse_jobs' %}" class="btn btn-outline" style="margin-bottom: 1.5rem;">&larr; Back to Job Board</a>
+        <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 700; display: inline-block;">
+            {{ job.get_job_type_display }}
+        </span>
+        <h1 style="font-size: 2.5rem; color: var(--secondary); margin-top: 0.5rem;">{{ job.title }}</h1>
+        <p style="font-size: 1.25rem; color: var(--primary-dark); font-weight: 600;">{{ job.company.name }}</p>
+    </div>
+
+    <!-- Details Card -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Job Description</h3>
+        <p style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-line; margin-bottom: 2rem;">
+            {{ job.description }}
+        </p>
+
+        <h3 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Requirements & Skills</h3>
+        <p style="color: var(--text-main); font-size: 0.95rem; line-height: 1.6; white-space: pre-line; margin-bottom: 2rem;">
+            {{ job.requirements }}
+        </p>
+
+        <!-- Position metadata -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; background: #f8fafc; padding: 1.5rem; border-radius: 8px; font-size: 0.9rem;">
+            <div>
+                <p>Location: <strong>{{ job.location }}</strong></p>
+                <p>Compensation Package: <strong>{{ job.salary_range|default:"Competitive" }}</strong></p>
+            </div>
+            <div>
+                <p>Eligible CGPA Gate: <strong>{{ job.min_cgpa }} or above</strong></p>
+                <p>Deadline Date: <strong style="color: #b91c1c;">{{ job.application_deadline|date:"M d, Y" }}</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Eligibility Action Box -->
+    <div class="card" style="text-align: center; background: #f0f9ff; border-color: #bae6fd;">
+        {% if has_applied %}
+            <div style="color: #166534; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">✓ Applied Successfully</div>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">You have already filed an application for this career opening. Tracking is available on your dashboard.</p>
+        {% elif is_past_deadline %}
+            <div style="color: #991b1b; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">Application Window Closed</div>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">The deadline for this job posting has expired on {{ job.application_deadline }}.</p>
+        {% elif not is_eligible %}
+            <div style="color: #991b1b; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">GPA Eligibility Gate Locked</div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                This position requires a minimum cumulative GPA of <strong>{{ job.min_cgpa }}</strong>. Your current verified GPA is <strong>{{ user.student_profile.cgpa }}</strong>.
+            </p>
+            <button class="btn btn-outline" style="cursor: not-allowed; opacity: 0.6;" disabled>Ineligible to Apply</button>
+        {% else %}
+            <div style="color: #0369a1; font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">You are Eligible to Apply!</div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                Your GPA meets the eligibility threshold. Submitting an application will share your verified Smart Portfolio profile directly with the recruitment committee.
+            </p>
+            <form method="post" action="{% url 'apply_job' job.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2.5rem; font-size: 1rem; background: var(--primary);">
+                    Submit Verifiable Profile & Apply
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

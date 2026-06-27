@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Grades | {{ course.code }} | EduSphere{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem; max-width: 800px;">
+    
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline" style="margin-bottom: 1.5rem;">&larr; Back to Dashboard</a>
+        <h1 style="font-size: 2.25rem; color: var(--secondary);">Upload Course Grades</h1>
+        <p style="color: var(--text-muted); font-size: 1.05rem;">
+            Course: <strong>{{ course.code }} - {{ course.name }}</strong> | Semester: <strong>Semester {{ course.semester }}</strong>
+        </p>
+    </div>
+
+    <div class="card">
+        <form method="post" action="">
+            {% csrf_token %}
+
+            <h3 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Enrolled Students Grade Entry Sheet</h3>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Enrollment Number</th>
+                            <th style="width: 200px;">Grade Letter</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if enrollments %}
+                            {% for enroll in enrollments %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ enroll.student.user.first_name|default:enroll.student.user.username }}</strong>
+                                    </td>
+                                    <td><strong>{{ enroll.student.enrollment_number }}</strong></td>
+                                    <td>
+                                        <input type="text" name="grade_{{ enroll.id }}" class="form-control" 
+                                            placeholder="e.g. A+, B, C, F" 
+                                            value="{{ enroll.grade|default_if_none:'' }}" 
+                                            style="width: 150px; font-weight: 700; text-transform: uppercase;">
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 2rem;">No students enrolled in this course.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem;">Publish Class Grades</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

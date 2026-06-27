@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Academic History | EduSphere{% endblock %}
+
+{% block extra_head %}
+<style>
+    .academics-container {
+        margin: 6rem auto 4rem;
+        max-width: 1100px;
+        padding: 0 1.5rem;
+    }
+    
+    .academics-header {
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--background) 100%);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+        border-radius: 16px;
+        padding: 2.5rem;
+        margin-bottom: 3rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.02);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+    
+    .academics-title h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--secondary);
+    }
+    
+    .academics-title p {
+        color: var(--text-muted);
+        margin-top: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .academics-stat-grid {
+        display: flex;
+        gap: 2rem;
+    }
+    
+    .academics-stat-box {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        text-align: center;
+        min-width: 120px;
+    }
+    
+    .academics-stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 700;
+        letter-spacing: 0.05em;
+    }
+    
+    .academics-stat-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        margin-top: 0.25rem;
+        color: var(--primary);
+    }
+    
+    .course-row-clickable:hover {
+        background-color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="academics-container">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline">&larr; Back to Dashboard</a>
+        <a href="{% url 'transcript' user.username %}" target="_blank" class="btn btn-primary" style="background: var(--primary-dark);">Official Transcript PDF / Print</a>
+    </div>
+
+    <!-- Academics Header Banner -->
+    <div class="academics-header">
+        <div class="academics-title">
+            <h1>Academic History</h1>
+            <p>Candidate: <strong>{{ profile.user.first_name|default:profile.user.username }} {{ profile.user.last_name|default:"" }}</strong> | Department: <strong>{{ profile.department.name }}</strong></p>
+        </div>
+        <div class="academics-stat-grid">
+            <div class="academics-stat-box">
+                <div class="academics-stat-label">Calculated CGPA</div>
+                <div class="academics-stat-value">{{ calculated_cgpa }}</div>
+            </div>
+            <div class="academics-stat-box">
+                <div class="academics-stat-label">Credits Completed</div>
+                <div class="academics-stat-value">{{ total_credits_completed }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semester History Timeline -->
+    <section>
+        {% if semesters %}
+            {% for sem in semesters %}
+                <div class="card" style="margin-bottom: 3rem; border-top: 4px solid var(--secondary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+                        <div>
+                            <h3 style="font-size: 1.35rem; font-weight: 800; color: var(--secondary); display: flex; align-items: center; gap: 0.75rem;">
+                                Semester {{ sem.semester_num }}
+                                {% if sem.semester_num == profile.current_semester %}
+                                    <span class="status-badge status-success" style="font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem;">Current</span>
+                                {% endif %}
+                            </h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Total Semester Credits: <strong>{{ sem.total_credits }}</strong></p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Semester SGPA</p>
+                            <span class="status-badge status-info" style="font-size: 1.15rem; padding: 0.35rem 0.8rem; font-weight: 800; border-radius: 8px;">
+                                {% if sem.sgpa %}{{ sem.sgpa }}{% else %}N/A{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive" style="margin-bottom: 0;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%">Course Code</th>
+                                    <th style="width: 35%">Course Name</th>
+                                    <th style="width: 10%">Credits</th>
+                                    <th style="width: 25%">Attendance</th>
+                                    <th style="width: 15%">Final Grade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enroll in sem.enrollments %}
+                                    <tr onclick="toggleDetails('details-{{ enroll.id }}')" class="course-row-clickable" style="cursor: pointer; transition: background-color 0.2s;">
+                                        <td><strong>{{ enroll.course.code }}</strong> <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.25rem;">▼</span></td>
+                                        <td>{{ enroll.course.name }}</td>
+                                        <td>{{ enroll.course.credits }}</td>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                <span>{{ enroll.attendance_percentage }}%</span>
+                                                <div style="width: 60px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; display: inline-block;">
+                                                    <div style="width: {{ enroll.attendance_percentage }}%; height: 100%; 
+                                                        background: {% if enroll.attendance_percentage < 75 %}#ef4444{% else %}#10b981{% endif %};">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if enroll.grade %}
+                                                <span style="font-weight: 700; color: var(--primary-dark); font-size: 1.1rem;">{{ enroll.grade }}</span>
+                                            {% else %}
+                                                <span style="color: var(--text-muted); font-style: italic;">In Progress</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr id="details-{{ enroll.id }}" class="course-details-row" style="display: none; background: #f8fafc; border-bottom: 2px solid var(--border);">
+                                        <td colspan="5" style="padding: 1.5rem 2rem;">
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                                                <!-- Attendance Details -->
+                                                <div>
+                                                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--secondary);">Attendance Breakdown</h4>
+                                                    <p style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 0.75rem;">
+                                                        Status: <strong>{{ enroll.present_count }} Present</strong>, <strong>{{ enroll.absent_count }} Absent</strong> 
+                                                        (Total classes recorded: {{ enroll.total_days }})
+                                                    </p>
+                                                    {% if enroll.attendance_records.all %}
+                                                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600; text-transform: uppercase;">Class Attendance Log (Last 10 days)</p>
+                                                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                                                            {% for record in enroll.attendance_records.all|slice:":10" %}
+                                                                <span class="status-badge {% if record.status == 'present' %}status-success{% else %}status-warning{% endif %}" 
+                                                                      style="font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 600;" 
+                                                                      title="{{ record.date|date:'Y-m-d' }}">
+                                                                    {{ record.date|date:"M d" }}: {% if record.status == 'present' %}P{% else %}A{% endif %}
+                                                                </span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% else %}
+                                                        <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No attendance logs available.</p>
+                                                    {% endif %}
+                                                </div>
+                                                <!-- Exam Results Details -->
+                                                <div>
+                                                    <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--secondary);">Assessment & Marks</h4>
+                                                    {% if enroll.exam_results.all %}
+                                                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                                            {% for exam in enroll.exam_results.all %}
+                                                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; border-bottom: 1px solid var(--border); padding-bottom: 0.25rem;">
+                                                                    <span style="font-weight: 500; color: var(--text-main);">{{ exam.assessment_name }}</span>
+                                                                    <span style="color: var(--secondary);"><strong>{{ exam.marks_obtained }}</strong> / {{ exam.max_marks }}</span>
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% else %}
+                                                        <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">No assessment marks posted yet.</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="card" style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                <p style="font-size: 1.1rem; font-style: italic;">No academic records registered yet.</p>
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDetails(id) {
+    var element = document.getElementById(id);
+    if (element.style.display === 'none') {
+        element.style.display = 'table-row';
+    } else {
+        element.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

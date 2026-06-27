@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}Placement & Career Portal | EduSphere{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div>
+            <h1 style="font-size: 2.5rem; color: var(--secondary);">Placement & Corporate Relations</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">
+                Placement Coordinator Portal | Desk Helpline: <strong>{{ profile.office_contact }}</strong>
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="{% url 'profile' %}" class="btn btn-outline">Profile Settings</a>
+            <button class="btn btn-primary" onclick="openJobModal()">+ Post New Job</button>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 3.5rem;">
+        <div class="card" style="border-left: 4px solid var(--primary);">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Active Postings</p>
+            <h3 style="font-size: 2.25rem; color: var(--secondary); margin-top: 0.5rem;">{{ active_postings.count }}</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Current open positions</span>
+        </div>
+        <div class="card" style="border-left: 4px solid #b45309;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Pending Applications</p>
+            <h3 style="font-size: 2.25rem; color: var(--secondary); margin-top: 0.5rem;">{{ applications.count }}</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Applications requiring review</span>
+        </div>
+        <div class="card" style="border-left: 4px solid #15803d;">
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 700;">Talent Pool</p>
+            <h3 style="font-size: 2.25rem; color: var(--secondary); margin-top: 0.5rem;">{{ students.count }}</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Registered candidates</span>
+        </div>
+    </div>
+
+    <!-- Tabbed navigation -->
+    <div class="tab-container">
+        <button class="tab-btn active" onclick="switchTab('applications')">Job Applications ({{ applications.count }})</button>
+        <button class="tab-btn" onclick="switchTab('jobs')">Active Job Postings</button>
+        <button class="tab-btn" onclick="switchTab('talent')">Student Talent Pool</button>
+    </div>
+
+    <!-- 1. APPLICATIONS PANEL -->
+    <div id="applications-panel" class="tab-panel active">
+        <h3 style="margin-bottom: 1rem; color: var(--secondary);">Student Applications List</h3>
+        {% if applications %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>GPA</th>
+                            <th>Role & Company</th>
+                            <th>Applied Date</th>
+                            <th>Current Status</th>
+                            <th>Decision Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                            <tr>
+                                <td>
+                                    <strong>{{ app.student.user.first_name|default:app.student.user.username }}</strong><br>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ app.student.enrollment_number }} | {{ app.student.department.code }}</span>
+                                </td>
+                                <td><span style="font-weight: 700;">{{ app.student.cgpa }}</span></td>
+                                <td>
+                                    <strong>{{ app.job_posting.title }}</strong><br>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ app.job_posting.company.name }}</span>
+                                </td>
+                                <td>{{ app.applied_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="status-badge 
+                                        {% if app.status == 'offered' %}status-success
+                                        {% elif app.status == 'rejected' %}status-danger
+                                        {% elif app.status == 'applied' %}status-info
+                                        {% else %}status-warning{% endif %}">
+                                        {{ app.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'public_portfolio' app.student.user.username %}" target="_blank" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; margin-bottom: 0.25rem;">View Resume</a>
+                                    
+                                    <button class="btn btn-primary" style="padding: 0.35rem 0.6rem; font-size: 0.75rem;" onclick="openStatusModal('{{ app.id }}', '{{ app.student.user.username }}', '{{ app.job_posting.title }}')">
+                                        Update Status
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No student applications filed yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- 2. ACTIVE JOBS PANEL -->
+    <div id="jobs-panel" class="tab-panel">
+        <h3 style="margin-bottom: 1.5rem; color: var(--secondary);">Active Placements & Internships Catalog</h3>
+        {% if active_postings %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+                {% for job in active_postings %}
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 700;">{{ job.get_job_type_display }}</span>
+                            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Min CGPA: {{ job.min_cgpa }}</span>
+                        </div>
+                        <h4 style="margin-top: 0.75rem; font-size: 1.25rem; font-weight: 700; color: var(--secondary);">{{ job.title }}</h4>
+                        <p style="color: var(--text-muted); font-weight: 500; font-size: 0.9rem;">{{ job.company.name }} • {{ job.location }}</p>
+                        <p style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">Salary: {{ job.salary_range|default:"Competitive" }}</p>
+                        
+                        <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted);">
+                            <span>Deadline: {{ job.application_deadline }}</span>
+                            <a href="{% url 'job_detail' job.id %}" style="color: var(--primary); font-weight: 600;">View Details &rarr;</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No active job postings listed.</p>
+        {% endif %}
+    </div>
+
+    <!-- 3. TALENT POOL PANEL -->
+    <div id="talent-panel" class="tab-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h3 style="color: var(--secondary);">Student Directory</h3>
+            
+            <!-- Filter Options (Dummy UI for filtering, could be expanded to actual GET parameters) -->
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="text" id="talent-search" placeholder="Search by name/skills..." onkeyup="filterTalentTable()" style="padding: 0.4rem 0.8rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; width: 250px;">
+            </div>
+        </div>
+
+        {% if students %}
+            <div class="table-responsive">
+                <table class="table" id="talent-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Department</th>
+                            <th>Graduation Year</th>
+                            <th>CGPA</th>
+                            <th>Skills</th>
+                            <th>Profile Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                            <tr>
+                                <td class="student-name">
+                                    <strong>{{ student.user.first_name|default:student.user.username }}</strong><br>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ student.enrollment_number }}</span>
+                                </td>
+                                <td>{{ student.department.name }}</td>
+                                <td>{{ student.graduation_year }}</td>
+                                <td><span style="font-weight: 700; font-size: 1.05rem; color: var(--secondary);">{{ student.cgpa }}</span></td>
+                                <td class="student-skills">
+                                    {% if student.skills.all %}
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                                            {% for skill in student.skills.all %}
+                                                <span style="font-size: 0.75rem; background: #e2e8f0; color: #334155; padding: 0.15rem 0.4rem; border-radius: 4px;">{{ skill.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span style="color: var(--text-muted); font-style: italic; font-size: 0.85rem;">No skills listed</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'public_portfolio' student.user.username %}" target="_blank" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">View Profile</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No students registered in the platform yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Job Posting Modal -->
+<div class="modal-overlay" id="job-modal">
+    <div class="modal-box" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">Post New Job Opening</h3>
+            <button class="modal-close" onclick="closeJobModal()">&times;</button>
+        </div>
+        <form method="post" action="{% url 'post_job' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Recruiting Company</label>
+                    {{ job_form.company }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Job Title</label>
+                    {{ job_form.title }}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Job Description</label>
+                {{ job_form.description }}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Requirements</label>
+                {{ job_form.requirements }}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    {{ job_form.location }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Job Type</label>
+                    {{ job_form.job_type }}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label class="form-label">Salary Range</label>
+                    {{ job_form.salary_range }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Min CGPA Gate</label>
+                    {{ job_form.min_cgpa }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Deadline</label>
+                    {{ job_form.application_deadline }}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Publish Job Opening</button>
+        </form>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal-overlay" id="status-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">Update Application Status</h3>
+            <button class="modal-close" onclick="closeStatusModal()">&times;</button>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Candidate: <strong id="cand-name" style="color: var(--secondary);"></strong> | Role: <span id="job-title-lbl"></span>
+        </p>
+        <form id="status-form" method="post" action="">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Application Status</label>
+                <select id="status-select" name="status" class="form-control" onchange="adjustStatusFormAction()" required>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="offered">Offered</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Recruiter Feedback / Remarks</label>
+                <textarea name="placement_officer_comments" class="form-control" rows="4" placeholder="Feedback notes from the placement board or recruiter interview loops..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Status Update</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+        
+        event.currentTarget.classList.add('active');
+        document.getElementById(tabId + '-panel').classList.add('active');
+    }
+
+    function openJobModal() {
+        document.getElementById('job-modal').classList.add('active');
+    }
+    
+    function closeJobModal() {
+        document.getElementById('job-modal').classList.remove('active');
+    }
+
+    let activeAppId = null;
+
+    function openStatusModal(appId, studentName, jobTitle) {
+        activeAppId = appId;
+        document.getElementById('cand-name').textContent = studentName;
+        document.getElementById('job-title-lbl').textContent = jobTitle;
+        adjustStatusFormAction();
+        document.getElementById('status-modal').classList.add('active');
+    }
+
+    function closeStatusModal() {
+        document.getElementById('status-modal').classList.remove('active');
+    }
+
+    function adjustStatusFormAction() {
+        const select = document.getElementById('status-select');
+        const form = document.getElementById('status-form');
+        form.action = `/placements/application/${activeAppId}/update/${select.value}/`;
+    }
+
+    function filterTalentTable() {
+        const input = document.getElementById('talent-search');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById('talent-table');
+        const trs = table.getElementsByTagName('tr');
+        
+        for (let i = 1; i < trs.length; i++) {
+            const tdName = trs[i].querySelector('.student-name');
+            const tdSkills = trs[i].querySelector('.student-skills');
+            
+            if (tdName || tdSkills) {
+                const nameText = tdName ? tdName.textContent.toLowerCase() : "";
+                const skillsText = tdSkills ? tdSkills.textContent.toLowerCase() : "";
+                
+                if (nameText.indexOf(filter) > -1 || skillsText.indexOf(filter) > -1) {
+                    trs[i].style.display = "";
+                } else {
+                    trs[i].style.display = "none";
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}

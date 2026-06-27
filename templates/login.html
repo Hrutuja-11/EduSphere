@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Log In | EduSphere{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Welcome Back</h2>
+        <p class="auth-subtitle">Log in to your EduSphere account.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="id_username" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Username</label>
+                <input type="text" name="username" id="id_username" class="form-control" required>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label for="id_password" style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem;">Password</label>
+                <input type="password" name="password" id="id_password" class="form-control" required>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; font-size: 0.9rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted); cursor: pointer;">
+                    <input type="checkbox" style="width: 16px; height: 16px; accent-color: var(--primary);"> Remember me
+                </label>
+                <a href="#" style="font-weight: 500;">Forgot password?</a>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 2rem; color: var(--text-muted); font-size: 0.95rem;">
+            Don't have an account? <a href="{% url 'signup' %}" style="font-weight: 600;">Sign up here</a>
+        </p>
+
+        <!-- Developer Role Quick-Login Panel -->
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+            <p style="text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 1rem; letter-spacing: 0.05em;">Developer Quick Sign-In</p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem; font-size: 0.8rem; font-weight: 500;" onclick="quickLogin('student1')">Student (CGPA 8.9)</button>
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem; font-size: 0.8rem; font-weight: 500;" onclick="quickLogin('student2')">Student (CGPA 7.2)</button>
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem; font-size: 0.8rem; font-weight: 500;" onclick="quickLogin('faculty1')">Faculty Member</button>
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem; font-size: 0.8rem; font-weight: 500;" onclick="quickLogin('hod1')">Head of Dept</button>
+                <button type="button" class="btn btn-outline" style="padding: 0.5rem; font-size: 0.8rem; font-weight: 500; grid-column: span 2;" onclick="quickLogin('placement1')">Placement Officer</button>
+            </div>
+        </div>
+
+        <script>
+            function quickLogin(username) {
+                document.getElementById('id_username').value = username;
+                document.getElementById('id_password').value = 'password123';
+                document.querySelector('form').submit();
+            }
+        </script>
+    </div>
+</div>
+{% endblock %}

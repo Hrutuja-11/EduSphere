@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Placements | EduSphere{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="dashboard-sidebar">
+        <ul class="sidebar-nav">
+            <li>
+                <a href="{% url 'dashboard' %}" class="sidebar-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                    Overview
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'dashboard' %}#academics-section" class="sidebar-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                    Academics
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'manage_portfolio' %}" class="sidebar-link">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/><path d="M7 17h10"/></svg>
+                    Smart Portfolio
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'browse_jobs' %}" class="sidebar-link active">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg>
+                    Placements
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="dashboard-header" style="margin-bottom: 2rem;">
+            <div>
+                <h1>Job & Internship Openings</h1>
+                <p>Browse career tracks posted by the placement cell. Eligibility is determined by your verified CGPA (<strong>{{ student.cgpa }}</strong>).</p>
+            </div>
+        </div>
+
+        {% if postings %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 2rem;">
+                {% for posting in postings %}
+                    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; height: 350px;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                                <span style="font-size: 0.75rem; background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 700;">
+                                    {{ posting.get_job_type_display }}
+                                </span>
+                                
+                                {% if posting.has_applied %}
+                                    <span class="status-badge status-success">Applied</span>
+                                {% elif not posting.is_eligible %}
+                                    <span class="status-badge status-danger" style="font-size: 0.7rem;">Ineligible (GPA < {{ posting.min_cgpa }})</span>
+                                {% elif posting.is_past_deadline %}
+                                    <span class="status-badge status-danger">Expired</span>
+                                {% else %}
+                                    <span class="status-badge status-info">Eligible</span>
+                                {% endif %}
+                            </div>
+                            
+                            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary); margin-bottom: 0.25rem;">{{ posting.title }}</h3>
+                            <p style="color: var(--text-muted); font-weight: 600; font-size: 0.95rem; margin-bottom: 1rem;">{{ posting.company.name }}</p>
+                            
+                            <p style="font-size: 0.85rem; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; margin-bottom: 1.5rem;">
+                                {{ posting.description }}
+                            </p>
+                        </div>
+                        
+                        <div style="border-top: 1px solid var(--border); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                <div>Loc: <strong>{{ posting.location }}</strong></div>
+                                <div>Deadline: <strong>{{ posting.application_deadline|date:"M d, Y" }}</strong></div>
+                            </div>
+                            
+                            <div>
+                                <a href="{% url 'job_detail' posting.id %}" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.85rem;">View details</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No active recruitment openings posted at this time.</p>
+        {% endif %}
+    </main>
+
+</div>
+{% endblock %}

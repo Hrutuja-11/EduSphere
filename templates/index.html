@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<style>
+    /* Tab button styling for features switcher */
+    .role-switcher-box {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        max-width: 900px;
+        margin: 2rem auto 0;
+    }
+    .role-btn {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+    .role-btn.active {
+        background: var(--secondary);
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    }
+    .role-detail-panel {
+        display: none;
+        margin-top: 1.5rem;
+    }
+    .role-detail-panel.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main>
+    
+    <!-- Hero Section -->
+    <section class="hero" style="position: relative; overflow: hidden;">
+        <!-- Floating Glassmorphic Background Blobs -->
+        <div class="hero-bg-blobs">
+            <div class="hero-blob hero-blob-1"></div>
+            <div class="hero-blob hero-blob-2"></div>
+            <div class="hero-blob hero-blob-3"></div>
+        </div>
+
+        <div class="hero-content" style="position: relative; z-index: 2;">
+            <div class="badge hero-fade-up" style="animation-delay: 0.1s;">EduSphere Platform 2.0</div>
+            <h1 class="hero-fade-up" style="animation-delay: 0.25s;">
+                Your academic journey, <br>
+                <span>unified.</span>
+            </h1>
+            <p class="hero-fade-up" style="animation-delay: 0.4s;">
+                The enterprise-grade platform connecting student academics, automated verifiable portfolios, and elite placement opportunities in one seamless experience.
+            </p>
+            <div class="hero-actions hero-fade-up" style="animation-delay: 0.55s;">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+                {% else %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Start your journey</a>
+                    <a href="#platform" class="btn btn-outline">Explore platform</a>
+                {% endif %}
+            </div>
+            
+            <div class="hero-fade-up" style="margin-top: 3rem; display: flex; align-items: center; gap: 1rem; animation-delay: 0.7s;">
+                <div style="display: flex;">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=40&h=40&q=80" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; object-fit: cover;" alt="Student">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=40&h=40&q=80" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; object-fit: cover; margin-left: -10px;" alt="Student">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=40&h=40&q=80" style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; object-fit: cover; margin-left: -10px;" alt="Student">
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">
+                    Joined by <strong style="color: var(--secondary);">10,000+</strong> students
+                </div>
+            </div>
+        </div>
+        
+        <div class="hero-image-wrapper hero-fade-right" style="position: relative; z-index: 2; animation-delay: 0.4s;">
+            <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" alt="Students collaborating on campus" class="hero-image">
+        </div>
+    </section>
+
+    <!-- Trusted By Logos -->
+    <section class="logos-section reveal reveal-up">
+        <div class="container">
+            <h4 class="logos-title">Trusted by top universities and placement partners</h4>
+            <div class="logos-grid reveal reveal-group">
+                <!-- Using generic placeholder logos that look real -->
+                <img class="reveal-item" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/250px-Google_2015_logo.svg.png" alt="Google">
+                <img class="reveal-item" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/250px-Microsoft_logo.svg.png" alt="Microsoft">
+                <img class="reveal-item" src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/250px-Amazon_logo.svg.png" alt="Amazon">
+                <img class="reveal-item" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/IBM_logo.svg/250px-IBM_logo.svg.png" alt="IBM">
+                <img class="reveal-item" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Tata_Consultancy_Services_Logo.svg/250px-Tata_Consultancy_Services_Logo.svg.png" alt="TCS">
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="platform" class="features" style="background: var(--background);">
+        <div class="container">
+            <div class="features-header reveal reveal-up" style="text-align: center; max-width: 600px; margin: 0 auto 3rem;">
+                <h2>The complete academic operating system</h2>
+                <p style="color: var(--text-muted); font-size: 1.15rem;">Everything you need to manage courses, verify achievements, and connect with top-tier employers.</p>
+            </div>
+            
+            <!-- Interactive Role Switcher in light theme -->
+            <div class="role-switcher-box reveal reveal-up">
+                <div style="display: flex; gap: 0.5rem; justify-content: center; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+                    <button class="role-btn active" onclick="switchRoleTab('student')">For Students</button>
+                    <button class="role-btn" onclick="switchRoleTab('faculty')">For Faculty</button>
+                    <button class="role-btn" onclick="switchRoleTab('placement')">For Placement Cell</button>
+                </div>
+
+                <!-- Student details -->
+                <div id="role-student" class="role-detail-panel active">
+                    <h3 style="color: var(--secondary); font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Automated, Verifiable Smart Portfolios</h3>
+                    <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 1.5rem; font-size: 1rem;">
+                        No more manual portfolio creation. Your student profile automatically compiles your verified course transcripts, completed projects, certifications, and extra-curricular achievements. Share your verified URL with recruiters to showcase a tamper-proof record of your growth.
+                    </p>
+                    <ul style="color: var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; list-style: none; padding: 0; font-size: 0.95rem;">
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Instant Resume Generation</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Unified Grades Transcripts</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Verified Accomplishments Badge</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> One-Click Job Eligibility checks</li>
+                    </ul>
+                </div>
+
+                <!-- Faculty details -->
+                <div id="role-faculty" class="role-detail-panel">
+                    <h3 style="color: var(--secondary); font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Streamlined Approvals & Class Management</h3>
+                    <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 1.5rem; font-size: 1rem;">
+                        Review and verify student accomplishments with a single click. Give professional recommendations and mentor endorsements directly into their public profile. Access assigned class logs to mark daily attendance lists or publish examination grades in seconds.
+                    </p>
+                    <ul style="color: var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; list-style: none; padding: 0; font-size: 0.95rem;">
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Single-click Verification queues</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Direct Student Endorsement tools</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Bulk Attendance sheets</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Simple Grade publishing panel</li>
+                    </ul>
+                </div>
+
+                <!-- Recruiter details -->
+                <div id="role-placement" class="role-detail-panel">
+                    <h3 style="color: var(--secondary); font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem;">Data-Driven Candidate Screening</h3>
+                    <p style="color: var(--text-muted); line-height: 1.6; margin-bottom: 1.5rem; font-size: 1rem;">
+                        Configure job postings with strict eligibility criteria (e.g. minimum CGPA cut-offs). Easily query the student talent pool filtered by verified skills (e.g. "React", "Python") or graduation years. Evaluators can update candidate screening progress with recruiter feedback.
+                    </p>
+                    <ul style="color: var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; list-style: none; padding: 0; font-size: 0.95rem;">
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Automatic GPA Eligibility gates</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Skill-based Talent directories</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Recruiter screening pipelines</li>
+                        <li style="display: flex; gap: 0.5rem; align-items: center;"><span style="color: #10b981; font-weight: 700;">✓</span> Placement analytics</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid reveal reveal-up">
+                <div class="footer-brand">
+                    <a href="/" class="brand">
+                        <div class="brand-icon"></div>
+                        EduSphere
+                    </a>
+                    <p>The unified platform connecting student academics, automated portfolios, and elite placement opportunities seamlessly.</p>
+                </div>
+                
+                <div>
+                    <h4 class="footer-heading">Platform</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Academic Core</a></li>
+                        <li><a href="#">Smart Portfolios</a></li>
+                        <li><a href="#">Placement Network</a></li>
+                        <li><a href="#">Pricing</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="footer-heading">Resources</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Student Guide</a></li>
+                        <li><a href="#">University Partners</a></li>
+                        <li><a href="#">Help Center</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="footer-heading">Company</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom reveal reveal-up">
+                <p>&copy; 2026 EduSphere Inc. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="#" aria-label="Twitter">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+                    </a>
+                    <a href="#" aria-label="LinkedIn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>
+                    </a>
+                    <a href="#" aria-label="GitHub">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchRoleTab(role) {
+        document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.role-detail-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        
+        event.currentTarget.classList.add('active');
+        const activePanel = document.getElementById('role-' + role);
+        activePanel.classList.add('active');
+    }
+</script>
+{% endblock %}
+

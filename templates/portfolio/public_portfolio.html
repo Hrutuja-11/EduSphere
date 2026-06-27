@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.user.first_name|default:student.user.username }}'s Verifiable Portfolio | EduSphere{% endblock %}
+
+{% block extra_head %}
+<style>
+    .portfolio-header {
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--background) 100%);
+        border-bottom: 1px solid var(--border);
+        color: var(--text-main);
+        padding: 5rem 10% 4rem;
+        margin-top: 75px;
+        position: relative;
+    }
+    .profile-card-flex {
+        display: flex;
+        gap: 2.5rem;
+        align-items: center;
+    }
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: var(--primary);
+        border: 4px solid var(--surface);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 800;
+        color: white;
+    }
+    .portfolio-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 3rem;
+        padding: 4rem 10%;
+    }
+    .portfolio-section {
+        margin-bottom: 3.5rem;
+    }
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--secondary);
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 0.5rem;
+    }
+    .badge-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        background: #dcfce7;
+        color: #15803d;
+        border: 1px solid #bbf7d0;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+    @media (max-width: 768px) {
+        .profile-card-flex { flex-direction: column; text-align: center; }
+        .portfolio-grid { grid-template-columns: 1fr; padding: 2rem 5%; }
+        .portfolio-header { padding: 4rem 5% 3rem; }
+    }
+    @media print {
+        .navbar, .no-print, form, .btn {
+            display: none !important;
+        }
+        body {
+            background: white !important;
+            color: black !important;
+        }
+        .portfolio-header {
+            margin-top: 0 !important;
+            padding: 2rem 5% !important;
+            background: white !important;
+            color: black !important;
+            border-bottom: 2px solid #000;
+        }
+        .profile-avatar {
+            border-color: #000 !important;
+            color: black !important;
+            background: #eee !important;
+        }
+        .portfolio-grid {
+            padding: 2rem 5% !important;
+            background: white !important;
+        }
+        .card {
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            background: white !important;
+        }
+        .portfolio-header p, .portfolio-header span, .portfolio-header strong {
+            color: black !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main style="background: var(--background); min-height: 100vh;">
+    
+    <!-- Portfolio Header Banner -->
+    <header class="portfolio-header">
+        <div class="profile-card-flex">
+            <div class="profile-avatar">
+                {{ student.user.username|make_list|first|upper }}
+            </div>
+            <div style="flex: 1;">
+                <h1 style="font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.5rem; color: var(--secondary);">
+                    {{ student.user.first_name|default:student.user.username }} {{ student.user.last_name|default:"" }}
+                </h1>
+                <p style="font-size: 1.15rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    {{ student.major|default:"Undergraduate Student" }} @ {{ student.department.name }}
+                    {% if student.location %}
+                        <span style="font-size: 0.95rem; color: var(--text-muted); margin-left: 0.75rem;">
+                            📍 {{ student.location }}
+                        </span>
+                    {% endif %}
+                </p>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    <span>Enrollment: <strong style="color: var(--text-main);">{{ student.enrollment_number|default:"-" }}</strong></span>
+                    <span>Semester: <strong style="color: var(--text-main);">Semester {{ student.current_semester }}</strong></span>
+                    <span>Graduation: <strong style="color: var(--text-main);">{{ student.graduation_year|default:"-" }}</strong></span>
+                    <span>CGPA: <strong style="color: var(--primary-dark);">{{ student.cgpa }} / 10.0</strong> (Verified)</span>
+                </div>
+
+                <!-- Social and Developer Links -->
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem;" class="no-print">
+                    {% if student.github %}
+                        <a href="{{ student.github }}" target="_blank" style="background: var(--surface); color: var(--text-main); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); transition: all 0.2s;" onmouseover="this.style.background='var(--primary-light)'; this.style.color='var(--primary)'; this.style.borderColor='rgba(37,99,235,0.2)';" onmouseout="this.style.background='var(--surface)'; this.style.color='var(--text-main)'; this.style.borderColor='var(--border)';">
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                            GitHub
+                        </a>
+                    {% endif %}
+                    {% if student.linkedin %}
+                        <a href="{{ student.linkedin }}" target="_blank" style="background: var(--surface); color: var(--text-main); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); transition: all 0.2s;" onmouseover="this.style.background='var(--primary-light)'; this.style.color='var(--primary)'; this.style.borderColor='rgba(37,99,235,0.2)';" onmouseout="this.style.background='var(--surface)'; this.style.color='var(--text-main)'; this.style.borderColor='var(--border)';">
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/></svg>
+                            LinkedIn
+                        </a>
+                    {% endif %}
+                    {% if student.leetcode %}
+                        <a href="{{ student.leetcode }}" target="_blank" style="background: var(--surface); color: var(--text-main); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); transition: all 0.2s;" onmouseover="this.style.background='var(--primary-light)'; this.style.color='var(--primary)'; this.style.borderColor='rgba(37,99,235,0.2)';" onmouseout="this.style.background='var(--surface)'; this.style.color='var(--text-main)'; this.style.borderColor='var(--border)';">
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M13.483 0a1.374 1.374 0 0 0-.961.414l-9.61 9.61a1.37 1.37 0 0 0-.414.96c0 .362.137.712.414.96l6.232 6.223c.237.237.562.373.911.373a1.37 1.37 0 0 0 .96-.414l9.61-9.61a1.37 1.37 0 0 0 .414-.96 1.37 1.37 0 0 0-.414-.96l-6.232-6.223A1.37 1.37 0 0 0 13.483 0zm.014 3.018l4.82 4.811-7.224 7.214-4.82-4.811zM2.083 9.479a1.5 1.5 0 0 0-1.083 1.479c0 .408.165.799.458 1.092l8.834 8.83c.299.299.704.47 1.137.47a1.603 1.603 0 0 0 1.137-.47l3.708-3.705-1.127-1.127-3.718 3.715-8.83-8.83v-.004l8.83-8.83 1.127-1.127-8.834-8.83a1.503 1.503 0 0 0-.602-.423z"/></svg>
+                            LeetCode
+                        </a>
+                    {% endif %}
+                    {% if student.codeforces %}
+                        <a href="{{ student.codeforces }}" target="_blank" style="background: var(--surface); color: var(--text-main); padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; border: 1px solid var(--border); transition: all 0.2s;" onmouseover="this.style.background='var(--primary-light)'; this.style.color='var(--primary)'; this.style.borderColor='rgba(37,99,235,0.2)';" onmouseout="this.style.background='var(--surface)'; this.style.color='var(--text-main)'; this.style.borderColor='var(--border)';">
+                            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="2" y="10" width="4" height="12" rx="1"/><rect x="10" y="2" width="4" height="20" rx="1"/><rect x="18" y="14" width="4" height="8" rx="1"/></svg>
+                            Codeforces
+                        </a>
+                    {% endif %}
+                </div>
+
+            </div>
+            <div class="no-print">
+                <button class="btn btn-primary" onclick="window.print()" style="background: var(--primary); font-size: 0.9rem;">
+                    Download / Print PDF Resume
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Grid Content -->
+    <div class="portfolio-grid">
+        
+        <!-- Left Column: Projects, Certifications, Achievements -->
+        <div>
+            <!-- Projects -->
+            <section class="portfolio-section">
+                <h2 class="section-title">Academic & Personal Projects</h2>
+                {% if projects %}
+                    <div style="display: flex; flex-direction: column; gap: 2rem;">
+                        {% for item in projects %}
+                            <div class="card" style="position: relative;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                                    <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">{{ item.title }}</h3>
+                                    
+                                    {% if item.verification_status == 'verified' %}
+                                        <span class="badge-check verified-badge-print">✓ Verified</span>
+                                    {% else %}
+                                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">(Unverified)</span>
+                                    {% endif %}
+                                </div>
+                                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem;">{{ item.description }}</p>
+                                
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.75rem; font-size: 0.85rem;">
+                                    <span style="color: var(--text-muted); font-weight: 500;">Tech: <strong style="color: var(--secondary);">{{ item.technologies_used }}</strong></span>
+                                    {% if item.project_link %}
+                                        <a href="{{ item.project_link }}" target="_blank" style="color: var(--primary); font-weight: 600;">Code Repository &rarr;</a>
+                                    {% endif %}
+                                </div>
+
+                                {% if item.faculty_comments %}
+                                    <div style="margin-top: 0.75rem; background: #f8fafc; border-left: 3px solid #16a34a; padding: 0.5rem 1rem; border-radius: 4px; font-size: 0.85rem; color: var(--text-muted);">
+                                        <strong>Faculty Reviewer Endorsement:</strong> "{{ item.faculty_comments }}"
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-muted); font-style: italic;">No projects registered in the portfolio.</p>
+                {% endif %}
+            </section>
+
+            <!-- Certifications -->
+            <section class="portfolio-section">
+                <h2 class="section-title">Certifications & Licenses</h2>
+                {% if certifications %}
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+                        {% for item in certifications %}
+                            <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--secondary);">{{ item.name }}</h3>
+                                    <p style="font-size: 0.85rem; color: var(--text-muted);">
+                                        Issued by: <strong>{{ item.issuing_organization }}</strong> | Date: {{ item.issue_date|date:"M Y" }}
+                                    </p>
+                                    {% if item.credential_id %}
+                                        <p style="font-size: 0.8rem; color: var(--text-muted);">Credential ID: {{ item.credential_id }}</p>
+                                    {% endif %}
+                                </div>
+                                <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+                                    {% if item.verification_status == 'verified' %}
+                                        <span class="badge-check verified-badge-print">✓ Verified Credential</span>
+                                    {% endif %}
+                                    {% if item.credential_url %}
+                                        <a href="{{ item.credential_url }}" target="_blank" style="font-size: 0.85rem; color: var(--primary); font-weight: 600; text-decoration: underline;">Verify URL</a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-muted); font-style: italic;">No professional certifications registered.</p>
+                {% endif %}
+            </section>
+
+            <!-- Achievements -->
+            <section class="portfolio-section">
+                <h2 class="section-title">Awards & Achievements</h2>
+                {% if achievements %}
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+                        {% for item in achievements %}
+                            <div class="card">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div>
+                                        <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--secondary);">{{ item.title }}</h3>
+                                        <span class="status-badge status-info" style="font-size: 0.7rem; margin-top: 0.25rem;">{{ item.get_category_display }}</span>
+                                    </div>
+                                    {% if item.verification_status == 'verified' %}
+                                        <span class="badge-check verified-badge-print">✓ Verified</span>
+                                    {% endif %}
+                                </div>
+                                <p style="margin-top: 0.75rem; color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">{{ item.description }}</p>
+                                <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Dated: {{ item.date }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-muted); font-style: italic;">No extra-curricular accomplishments uploaded.</p>
+                {% endif %}
+            </section>
+        </div>
+
+        <!-- Right Column: Skills & Endorsements -->
+        <div>
+            <!-- Skills -->
+            <section class="portfolio-section" style="page-break-inside: avoid;">
+                <h2 class="section-title">Acquired Skills</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    {% if student.skills.all %}
+                        {% for skill in student.skills.all %}
+                            <span style="background: var(--secondary); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 6px; font-weight: 600;">
+                                {{ skill.name }}
+                            </span>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: var(--text-muted); font-style: italic;">No skills listed.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Faculty Endorsements -->
+            <section class="portfolio-section" style="page-break-inside: avoid;">
+                <h2 class="section-title">Faculty Recommendations</h2>
+                {% if endorsements %}
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        {% for end in endorsements %}
+                            <div class="card" style="background: #f8fafc; border-left: 4px solid var(--primary);">
+                                <p style="font-style: italic; font-size: 0.9rem; color: var(--text-main); line-height: 1.6; margin-bottom: 0.75rem;">
+                                    "{{ end.content }}"
+                                </p>
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                    <strong>{{ end.faculty.user.first_name|default:end.faculty.user.username }}</strong>
+                                    <span>{{ end.get_relationship_display }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-muted); font-style: italic;">No endorsements recorded yet.</p>
+                {% endif %}
+            </section>
+        </div>
+
+    </div>
+</main>
+{% endblock %}

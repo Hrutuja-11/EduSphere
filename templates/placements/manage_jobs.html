@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Placements | EduSphere{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem;">
+        <div>
+            <h1 style="font-size: 2.5rem; color: var(--secondary);">Placement & Job Management</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">Manage active corporate partnerships and review candidate application flows.</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="openJobModal()">+ Post New Job</button>
+        </div>
+    </div>
+
+    <!-- Active Job Postings List -->
+    <div class="card" style="margin-bottom: 3rem;">
+        <h3 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Currently Published Job Listings</h3>
+        
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Job Title</th>
+                        <th>Job Type</th>
+                        <th>Location</th>
+                        <th>Min CGPA Gate</th>
+                        <th>Salary Pack</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if postings %}
+                        {% for job in postings %}
+                            <tr>
+                                <td><strong>{{ job.company.name }}</strong></td>
+                                <td><strong>{{ job.title }}</strong></td>
+                                <td>{{ job.get_job_type_display }}</td>
+                                <td>{{ job.location }}</td>
+                                <td><span style="font-weight: 700;">{{ job.min_cgpa }}</span></td>
+                                <td>{{ job.salary_range|default:"-" }}</td>
+                                <td>{{ job.application_deadline }}</td>
+                                <td>
+                                    <span class="status-badge {% if job.is_active %}status-success{% else %}status-warning{% endif %}">
+                                        {% if job.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">No job listings published.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Job Applications Tracking Table -->
+    <div class="card">
+        <h3 style="font-size: 1.25rem; color: var(--secondary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Candidate Application Submissions</h3>
+        
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Student Candidate</th>
+                        <th>Department</th>
+                        <th>GPA</th>
+                        <th>Applied For</th>
+                        <th>Submission Date</th>
+                        <th>Status</th>
+                        <th>Screening Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if applications %}
+                        {% for app in applications %}
+                            <tr>
+                                <td>
+                                    <strong>{{ app.student.user.first_name|default:app.student.user.username }} {{ app.student.user.last_name }}</strong><br>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">ID: {{ app.student.enrollment_number }}</span>
+                                </td>
+                                <td>{{ app.student.department.code }}</td>
+                                <td><span style="font-weight: 700;">{{ app.student.cgpa }}</span></td>
+                                <td>
+                                    <strong>{{ app.job_posting.title }}</strong><br>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ app.job_posting.company.name }}</span>
+                                </td>
+                                <td>{{ app.applied_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="status-badge 
+                                        {% if app.status == 'offered' %}status-success
+                                        {% elif app.status == 'rejected' %}status-danger
+                                        {% elif app.status == 'applied' %}status-info
+                                        {% else %}status-warning{% endif %}">
+                                        {{ app.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 0.25rem; flex-direction: column;">
+                                        <a href="{% url 'public_portfolio' app.student.user.username %}" target="_blank" class="btn btn-outline" style="padding: 0.35rem 0.5rem; font-size: 0.75rem; text-align: center;">View Portfolio</a>
+                                        <button class="btn btn-primary" style="padding: 0.35rem 0.5rem; font-size: 0.75rem;" onclick="openStatusModal('{{ app.id }}', '{{ app.student.user.username }}', '{{ app.job_posting.title }}')">Update Status</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No candidates have submitted applications yet.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Job Posting Modal -->
+<div class="modal-overlay" id="job-modal">
+    <div class="modal-box" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">Post New Job Opening</h3>
+            <button class="modal-close" onclick="closeJobModal()">&times;</button>
+        </div>
+        <form method="post" action="{% url 'post_job' %}">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Recruiting Company</label>
+                    {{ job_form.company }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Job Title</label>
+                    {{ job_form.title }}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Job Description</label>
+                {{ job_form.description }}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Requirements</label>
+                {{ job_form.requirements }}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    {{ job_form.location }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Job Type</label>
+                    {{ job_form.job_type }}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label class="form-label">Salary Range</label>
+                    {{ job_form.salary_range }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Min CGPA Gate</label>
+                    {{ job_form.min_cgpa }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Deadline</label>
+                    {{ job_form.application_deadline }}
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Publish Job Opening</button>
+        </form>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+<div class="modal-overlay" id="status-modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">Update Application Status</h3>
+            <button class="modal-close" onclick="closeStatusModal()">&times;</button>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            Candidate: <strong id="cand-name" style="color: var(--secondary);"></strong> | Role: <span id="job-title-lbl"></span>
+        </p>
+        <form id="status-form" method="post" action="">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Application Status</label>
+                <select id="status-select" name="status" class="form-control" onchange="adjustStatusFormAction()" required>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="offered">Offered</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Recruiter Feedback / Remarks</label>
+                <textarea name="placement_officer_comments" class="form-control" rows="4" placeholder="Feedback notes from the placement board or recruiter interview loops..." required></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Save Status Update</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openJobModal() {
+        document.getElementById('job-modal').classList.add('active');
+    }
+    
+    function closeJobModal() {
+        document.getElementById('job-modal').classList.remove('active');
+    }
+
+    let activeAppId = null;
+
+    function openStatusModal(appId, studentName, jobTitle) {
+        activeAppId = appId;
+        document.getElementById('cand-name').textContent = studentName;
+        document.getElementById('job-title-lbl').textContent = jobTitle;
+        adjustStatusFormAction();
+        document.getElementById('status-modal').classList.add('active');
+    }
+
+    function closeStatusModal() {
+        document.getElementById('status-modal').classList.remove('active');
+    }
+
+    function adjustStatusFormAction() {
+        const select = document.getElementById('status-select');
+        const form = document.getElementById('status-form');
+        form.action = `/placements/application/${activeAppId}/update/${select.value}/`;
+    }
+</script>
+{% endblock %}
