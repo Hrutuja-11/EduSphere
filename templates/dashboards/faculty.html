@@ -42,6 +42,9 @@
         <button class="tab-btn active" onclick="switchTab('verifications')">Pending Verifications</button>
         <button class="tab-btn" onclick="switchTab('courses')">Class & Academic Management</button>
         <button class="tab-btn" onclick="switchTab('students')">Student Endorsements</button>
+        {% if incharge_classes %}
+            <button class="tab-btn" onclick="switchTab('class-incharge')">Class Incharge Panel</button>
+        {% endif %}
     </div>
 
     <!-- 1. VERIFICATIONS PANEL -->
@@ -281,6 +284,55 @@
             <p style="color: var(--text-muted); font-style: italic;">No students registered in this department.</p>
         {% endif %}
     </div>
+
+    <!-- 4. CLASS INCHARGE PANEL -->
+    {% if incharge_classes %}
+    <div id="class-incharge-panel" class="tab-panel">
+        <h3 style="margin-bottom: 0.5rem; color: var(--secondary);">Class Incharge Student Roster</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+            You are the assigned Class Incharge for: 
+            {% for c in incharge_classes %}
+                <strong>Semester {{ c.semester }} ({{ c.department.code }})</strong>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+
+        {% if incharge_students %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Enrollment No.</th>
+                            <th>Current Semester</th>
+                            <th>CGPA</th>
+                            <th style="text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in incharge_students %}
+                            <tr>
+                                <td>
+                                    <strong>{{ student.user.first_name|default:student.user.username }} {{ student.user.last_name }}</strong><br>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted);">{{ student.user.email }}</span>
+                                </td>
+                                <td><strong>{{ student.enrollment_number|default:"N/A" }}</strong></td>
+                                <td><span class="status-badge status-info">Semester {{ student.current_semester }}</span></td>
+                                <td><strong>{{ student.cgpa }} / 10.0</strong></td>
+                                <td style="text-align: center;">
+                                    <a href="{% url 'manage_student_class' student.id %}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                                        Manage Student
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p style="color: var(--text-muted); font-style: italic;">No students registered in your assigned semester class.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 
 </div>
 

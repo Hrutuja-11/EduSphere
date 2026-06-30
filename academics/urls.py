@@ -10,4 +10,7 @@ urlpatterns = [
     path('academics/timetable/delete/<int:entry_id>/', views.delete_timetable_entry, name='delete_timetable_entry'),
     path('academics/course/add/', views.add_course, name='add_course'),
     path('academics/course/<int:course_id>/assign/', views.assign_faculty, name='assign_faculty'),
+    path('academics/class-incharge/assign/', views.assign_class_incharge, name='assign_class_incharge'),
+    path('academics/student/<int:student_id>/manage/', views.manage_student_class, name='manage_student_class'),
 ]
+

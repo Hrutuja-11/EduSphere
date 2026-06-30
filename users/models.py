@@ -117,6 +117,7 @@ def create_user_profile(sender, instance, created, **kwargs):
             FacultyProfile.objects.create(user=instance)
         elif instance.role == 'hod':
             HODProfile.objects.create(user=instance)
+            FacultyProfile.objects.create(user=instance)
         elif instance.role == 'placement_officer':
             PlacementOfficerProfile.objects.create(user=instance)
 
@@ -132,6 +133,8 @@ def save_user_profile(sender, instance, **kwargs):
             instance.faculty_profile.save()
         elif instance.role == 'hod':
             instance.hod_profile.save()
+            if hasattr(instance, 'faculty_profile'):
+                instance.faculty_profile.save()
         elif instance.role == 'placement_officer':
             instance.placement_profile.save()
     except Exception:

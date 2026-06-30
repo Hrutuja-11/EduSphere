@@ -1,4 +1,6 @@
 from django.db import models
+import datetime
+
 
 class Department(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -85,3 +87,27 @@ class TimetableEntry(models.Model):
 
     def __str__(self):
         return f"{self.course.code} - {self.day} {self.slot} (Sem {self.semester})"
+
+
+class ClassIncharge(models.Model):
+    faculty = models.ForeignKey('users.FacultyProfile', on_delete=models.CASCADE, related_name='class_incharges')
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='class_incharges')
+    semester = models.IntegerField()
+
+    class Meta:
+        unique_together = ('department', 'semester')
+
+    def __str__(self):
+        return f"{self.faculty.user.first_name or self.faculty.user.username} - {self.department.code} Sem {self.semester}"
+
+
+class StudentActivity(models.Model):
+    student = models.ForeignKey('users.StudentProfile', on_delete=models.CASCADE, related_name='activities')
+    date = models.DateField(default=datetime.date.today)
+    activity_type = models.CharField(max_length=100) # e.g. Lab Performance, Seminar, Discipline, Sports, etc.
+    description = models.TextField()
+    logged_by = models.ForeignKey('users.FacultyProfile', on_delete=models.SET_NULL, null=True, related_name='logged_activities')
+
+    def __str__(self):
+        return f"{self.student.user.username} - {self.date} - {self.activity_type}"
+

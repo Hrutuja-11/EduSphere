@@ -207,7 +207,17 @@ def verify_item(request, item_type, item_id, action):
         messages.error(request, "Only faculty members can verify achievements.")
         return redirect('dashboard')
         
-    faculty = request.user.faculty_profile
+    if request.user.role == 'hod':
+        faculty = getattr(request.user, 'faculty_profile', None)
+        if not faculty:
+            dept = request.user.hod_profile.department
+            faculty = FacultyProfile.objects.create(
+                user=request.user,
+                department=dept,
+                designation="HOD / Professor"
+            )
+    else:
+        faculty = request.user.faculty_profile
     
     if item_type == 'project':
         item = get_object_or_404(Project, id=item_id)
@@ -244,7 +254,18 @@ def add_endorsement(request, student_id):
         return redirect('dashboard')
         
     student = get_object_or_404(StudentProfile, id=student_id)
-    faculty = request.user.faculty_profile
+    
+    if request.user.role == 'hod':
+        faculty = getattr(request.user, 'faculty_profile', None)
+        if not faculty:
+            dept = request.user.hod_profile.department
+            faculty = FacultyProfile.objects.create(
+                user=request.user,
+                department=dept,
+                designation="HOD / Professor"
+            )
+    else:
+        faculty = request.user.faculty_profile
     
     if request.method == 'POST':
         form = EndorsementForm(request.POST)
@@ -258,6 +279,7 @@ def add_endorsement(request, student_id):
             messages.error(request, "Error submitting endorsement.")
             
     return redirect('dashboard')
+
 
 
 @login_required

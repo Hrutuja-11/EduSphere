@@ -154,6 +154,9 @@ def dashboard_view(request):
                 'slots': day_slots
             })
         
+        # Get student daily activities
+        activities = profile.activities.all().select_related('logged_by__user').order_by('-date')
+        
         context = {
             'profile': profile,
             'enrollments': current_enrollments,
@@ -168,6 +171,7 @@ def dashboard_view(request):
             'timetable': timetable_list,
             'timetable_slots': timetable_slots,
             'has_timetable': db_entries.exists(),
+            'activities': activities,
         }
         return render(request, 'dashboards/student.html', context)
         
@@ -186,6 +190,13 @@ def dashboard_view(request):
         dept_students = StudentProfile.objects.filter(department=dept).select_related('user')
         courses = Course.objects.filter(department=dept)
         
+        from academics.models import ClassIncharge
+        incharge_classes = ClassIncharge.objects.filter(faculty=profile).select_related('department')
+        incharge_students = StudentProfile.objects.filter(
+            department=dept,
+            current_semester__in=[c.semester for c in incharge_classes]
+        ).select_related('user')
+        
         context = {
             'profile': profile,
             'department': dept,
@@ -194,6 +205,8 @@ def dashboard_view(request):
             'pending_achievements': pending_achievements,
             'students': dept_students,
             'courses': courses,
+            'incharge_classes': incharge_classes,
+            'incharge_students': incharge_students,
         }
         return render(request, 'dashboards/faculty.html', context)
         
@@ -223,6 +236,16 @@ def dashboard_view(request):
         timetable_form = TimetableEntryForm(department=dept)
         course_form = CourseForm(department=dept)
         
+        from academics.models import ClassIncharge
+        class_incharges = ClassIncharge.objects.filter(department=dept).select_related('faculty__user')
+        incharges_dict = {ci.semester: ci for ci in class_incharges}
+        semesters_incharges = []
+        for sem in range(1, 9):
+            semesters_incharges.append({
+                'semester': sem,
+                'incharge': incharges_dict.get(sem)
+            })
+        
         context = {
             'profile': profile,
             'department': dept,
@@ -237,8 +260,11 @@ def dashboard_view(request):
             'course_form': course_form,
             'timetable_entries': timetable_entries,
             'timetable_form': timetable_form,
+            'class_incharges': class_incharges,
+            'semesters_incharges': semesters_incharges,
         }
         return render(request, 'dashboards/hod.html', context)
+
         
     elif role == 'placement_officer':
         from placements.models import JobPosting, JobApplication

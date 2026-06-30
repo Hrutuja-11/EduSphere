@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Student Academics | EduSphere{% endblock %}
+
+{% block extra_head %}
+<style>
+    .manage-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    .student-hero {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 2rem;
+        border: 1px solid var(--border);
+        margin-bottom: 2.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .student-details {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    .student-avatar {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: var(--primary-light);
+        color: var(--primary);
+        font-size: 2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-transform: uppercase;
+        border: 2px solid var(--primary);
+    }
+    .student-meta h2 {
+        font-size: 1.75rem;
+        color: var(--secondary);
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    .student-meta p {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        margin-bottom: 0.1rem;
+    }
+    .activity-item {
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 0;
+    }
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    .badge-type {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        background: #f1f5f9;
+        color: var(--text-main);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        margin-right: 0.5rem;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+    }
+    @media (max-width: 992px) {
+        .manage-grid {
+            grid-template-columns: 1fr;
+        }
+        .student-hero {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 6rem; padding-bottom: 4rem;">
+    
+    <!-- Top Back Button -->
+    <div style="margin-bottom: 1.5rem;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+            &larr; Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Student Info Hero Header -->
+    <div class="student-hero">
+        <div class="student-details">
+            <div class="student-avatar">
+                {{ student.user.username|slice:":2" }}
+            </div>
+            <div class="student-meta">
+                <h2>{{ student.user.first_name|default:student.user.username }} {{ student.user.last_name }}</h2>
+                <p>Enrollment Number: <strong>{{ student.enrollment_number|default:"N/A" }}</strong></p>
+                <p>Department: <strong>{{ student.department.name }}</strong> | CGPA: <strong>{{ student.cgpa }} / 10.0</strong></p>
+            </div>
+        </div>
+        <div>
+            <form method="POST" action="{% url 'manage_student_class' student.id %}" style="display: flex; gap: 0.75rem; align-items: flex-end;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_academics">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 700;">Promote/Change Semester</label>
+                    <select name="current_semester" class="form-control" style="width: 140px; padding: 0.4rem;">
+                        {% for sem in "12345678"|make_list %}
+                            <option value="{{ sem }}" {% if student.current_semester|stringformat:"s" == sem %}selected{% endif %}>Semester {{ sem }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 0.55rem 1rem; font-size: 0.9rem;">Update Sem</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="manage-grid">
+        
+        <!-- Left Column: Course Academic & Grade Management -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            
+            <!-- Academics card -->
+            <div class="card" style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h3 style="color: var(--secondary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    Course Attendance & Grades (Semester {{ student.current_semester }})
+                </h3>
+                {% if enrollments %}
+                    <form method="POST" action="{% url 'manage_student_class' student.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_academics">
+                        
+                        <div class="table-responsive" style="margin-bottom: 1.5rem; overflow-x: visible;">
+                            <table class="table" style="overflow: visible;">
+                                <thead>
+                                    <tr>
+                                        <th>Course</th>
+                                        <th style="width: 30%;">Attendance %</th>
+                                        <th style="width: 30%;">Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for enroll in enrollments %}
+                                        <tr>
+                                            <td>
+                                                <strong style="color: var(--secondary);">{{ enroll.course.code }}</strong><br>
+                                                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ enroll.course.name }}</span>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="attendance_{{ enroll.id }}" value="{{ enroll.attendance_percentage }}" step="0.01" min="0" max="100" class="form-control" style="padding: 0.4rem; font-size: 0.9rem;" required>
+                                            </td>
+                                            <td>
+                                                <select name="grade_{{ enroll.id }}" class="form-control" style="padding: 0.4rem; font-size: 0.9rem;">
+                                                    <option value="" {% if not enroll.grade %}selected{% endif %}>-- No Grade --</option>
+                                                    <option value="O" {% if enroll.grade == "O" %}selected{% endif %}>O</option>
+                                                    <option value="A+" {% if enroll.grade == "A+" %}selected{% endif %}>A+</option>
+                                                    <option value="A" {% if enroll.grade == "A" %}selected{% endif %}>A</option>
+                                                    <option value="B+" {% if enroll.grade == "B+" %}selected{% endif %}>B+</option>
+                                                    <option value="B" {% if enroll.grade == "B" %}selected{% endif %}>B</option>
+                                                    <option value="C" {% if enroll.grade == "C" %}selected{% endif %}>C</option>
+                                                    <option value="D" {% if enroll.grade == "D" %}selected{% endif %}>D</option>
+                                                    <option value="F" {% if enroll.grade == "F" %}selected{% endif %}>F</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Save Academic Progress</button>
+                    </form>
+                {% else %}
+                    <p style="color: var(--text-muted); font-style: italic; text-align: center; padding: 1.5rem;">
+                        Student has no active course enrollments for Semester {{ student.current_semester }}.
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Marks & Assessment card -->
+            <div class="card" style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <h3 style="color: var(--secondary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    Exam Results & Internal Marks
+                </h3>
+                
+                <!-- List of existing marks -->
+                {% if exam_results %}
+                    <div class="table-responsive" style="margin-bottom: 2rem;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Assessment Name</th>
+                                    <th style="text-align: center;">Marks</th>
+                                    <th style="text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for res in exam_results %}
+                                    <tr>
+                                        <td><strong>{{ res.enrollment.course.code }}</strong></td>
+                                        <td>{{ res.assessment_name }}</td>
+                                        <td style="text-align: center;"><strong>{{ res.marks_obtained }}</strong> / {{ res.max_marks }}</td>
+                                        <td style="text-align: center;">
+                                            <form method="POST" action="{% url 'manage_student_class' student.id %}" onsubmit="return confirm('Are you sure you want to remove this mark?');" style="display:inline;">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="delete_marks">
+                                                <input type="hidden" name="result_id" value="{{ res.id }}">
+                                                <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; font-weight: 600; font-size: 0.85rem;">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p style="color: var(--text-muted); font-style: italic; margin-bottom: 2rem;">No assessment results logged yet.</p>
+                {% endif %}
+
+                <!-- Add marks inline form -->
+                {% if enrollments %}
+                    <div style="background: var(--background); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border);">
+                        <h4 style="color: var(--secondary); margin-bottom: 1rem; font-size: 1rem; font-weight: 700;">Add New Assessment Mark</h4>
+                        <form method="POST" action="{% url 'manage_student_class' student.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="add_marks">
+                            
+                            <div class="form-group">
+                                <label class="form-label" style="font-size: 0.85rem;">Select Course</label>
+                                <select name="enrollment_id" class="form-control" required style="padding: 0.4rem;">
+                                    {% for enroll in enrollments %}
+                                        <option value="{{ enroll.id }}">{{ enroll.course.code }} - {{ enroll.course.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" style="font-size: 0.85rem;">Assessment Name</label>
+                                <input type="text" name="assessment_name" placeholder="e.g. Midterm, Quiz 1, End Sem" class="form-control" style="padding: 0.4rem;" required>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-group">
+                                    <label class="form-label" style="font-size: 0.85rem;">Max Marks</label>
+                                    <input type="number" name="max_marks" step="0.01" min="0" placeholder="100" class="form-control" style="padding: 0.4rem;" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" style="font-size: 0.85rem;">Marks Obtained</label>
+                                    <input type="number" name="marks_obtained" step="0.01" min="0" placeholder="85" class="form-control" style="padding: 0.4rem;" required>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-outline" style="width: 100%; margin-top: 1rem; border-color: var(--primary); color: var(--primary);">Add Assessment Marks</button>
+                        </form>
+                    </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <!-- Right Column: Student Activities & Remarks -->
+        <div>
+            
+            <div class="card" style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column;">
+                <h3 style="color: var(--secondary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    Daily Activities & Remarks Log
+                </h3>
+
+                <!-- Activities list -->
+                <div style="flex-grow: 1; margin-bottom: 2.5rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">
+                    {% if activities %}
+                        {% for act in activities %}
+                            <div class="activity-item">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div>
+                                        <span class="badge-type">{{ act.activity_type }}</span>
+                                        <span style="font-size: 0.85rem; color: var(--text-muted);">{{ act.date|date:"M d, Y" }}</span>
+                                    </div>
+                                    <form method="POST" action="{% url 'manage_student_class' student.id %}" onsubmit="return confirm('Are you sure you want to remove this activity log?');" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_activity">
+                                        <input type="hidden" name="activity_id" value="{{ act.id }}">
+                                        <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.85rem;">&times; Delete</button>
+                                    </form>
+                                </div>
+                                <p style="margin-top: 0.5rem; font-size: 0.95rem; color: var(--text-main);">{{ act.description }}</p>
+                                {% if act.logged_by %}
+                                    <small style="display:block; margin-top: 0.25rem; color: var(--text-muted); font-style: italic;">
+                                        Logged by: {{ act.logged_by.user.first_name|default:act.logged_by.user.username }}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: var(--text-muted); font-style: italic; text-align: center; padding: 2rem;">No activities logged yet.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Add Activity form -->
+                <div style="background: var(--background); padding: 1.25rem; border-radius: 8px; border: 1px solid var(--border); margin-top: auto;">
+                    <h4 style="color: var(--secondary); margin-bottom: 1rem; font-size: 1rem; font-weight: 700;">Log New Activity / Remark</h4>
+                    <form method="POST" action="{% url 'manage_student_class' student.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_activity">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label class="form-label" style="font-size: 0.85rem;">Activity Type</label>
+                                <select name="activity_type" class="form-control" style="padding: 0.4rem;" required>
+                                    <option value="Lab Performance">Lab Performance</option>
+                                    <option value="Seminar/Presentation">Seminar/Presentation</option>
+                                    <option value="Assignment Submission">Assignment Submission</option>
+                                    <option value="Discipline & Behavior">Discipline & Behavior</option>
+                                    <option value="Extracurricular Activity">Extracurricular Activity</option>
+                                    <option value="Other Daily Activity">Other Daily Activity</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="font-size: 0.85rem;">Date</label>
+                                <input type="date" name="date" value="{{ today }}" class="form-control" style="padding: 0.4rem;" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" style="font-size: 0.85rem;">Description / Notes</label>
+                            <textarea name="description" placeholder="Describe the activity, performance, or incident details..." rows="3" class="form-control" style="padding: 0.5rem; font-size: 0.9rem;" required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Log Activity</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

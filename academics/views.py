@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.db.models import Avg
 from users.models import StudentProfile
-from .models import Course, CourseEnrollment, AttendanceRecord, ExamResult, TimetableEntry
+from .models import Course, CourseEnrollment, AttendanceRecord, ExamResult, TimetableEntry, ClassIncharge, StudentActivity
 from academics.forms import TimetableEntryForm, CourseForm
 import datetime
 
@@ -33,17 +33,22 @@ def academic_transcript(request, username):
 def mark_attendance(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     
-    # Access control: Only HOD of the course's department or the assigned faculty can mark attendance
+    can_access = False
     if request.user.role == 'hod':
-        if request.user.hod_profile.department != course.department:
-            messages.error(request, "Access denied. This course belongs to another department.")
-            return redirect('dashboard')
+        if request.user.hod_profile.department == course.department:
+            can_access = True
     elif request.user.role == 'faculty':
-        if course.faculty != request.user.faculty_profile:
-            messages.error(request, "Access denied. You are not assigned to teach this course.")
-            return redirect('dashboard')
-    else:
-        messages.error(request, "Access denied.")
+        if course.faculty == request.user.faculty_profile:
+            can_access = True
+        else:
+            can_access = ClassIncharge.objects.filter(
+                faculty=request.user.faculty_profile,
+                department=course.department,
+                semester=course.semester
+            ).exists()
+            
+    if not can_access:
+        messages.error(request, "Access denied. You are not authorized to mark attendance for this course.")
         return redirect('dashboard')
     enrollments = CourseEnrollment.objects.filter(course=course).select_related('student__user')
     
@@ -86,17 +91,22 @@ def mark_attendance(request, course_id):
 def upload_grades(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     
-    # Access control: Only HOD of the course's department or the assigned faculty can upload grades
+    can_access = False
     if request.user.role == 'hod':
-        if request.user.hod_profile.department != course.department:
-            messages.error(request, "Access denied. This course belongs to another department.")
-            return redirect('dashboard')
+        if request.user.hod_profile.department == course.department:
+            can_access = True
     elif request.user.role == 'faculty':
-        if course.faculty != request.user.faculty_profile:
-            messages.error(request, "Access denied. You are not assigned to teach this course.")
-            return redirect('dashboard')
-    else:
-        messages.error(request, "Access denied.")
+        if course.faculty == request.user.faculty_profile:
+            can_access = True
+        else:
+            can_access = ClassIncharge.objects.filter(
+                faculty=request.user.faculty_profile,
+                department=course.department,
+                semester=course.semester
+            ).exists()
+            
+    if not can_access:
+        messages.error(request, "Access denied. You are not authorized to upload grades for this course.")
         return redirect('dashboard')
     enrollments = CourseEnrollment.objects.filter(course=course).select_related('student__user')
     
@@ -268,3 +278,173 @@ def assign_faculty(request, course_id):
             messages.success(request, f"Faculty unassigned from course '{course.name}'.")
             
     return redirect('dashboard')
+
+
+@login_required
+def assign_class_incharge(request):
+    if request.user.role != 'hod':
+        messages.error(request, "Access denied.")
+        return redirect('dashboard')
+        
+    profile = request.user.hod_profile
+    department = profile.department
+    
+    if request.method == 'POST':
+        faculty_id = request.POST.get('faculty_id')
+        semester = request.POST.get('semester')
+        
+        if not semester:
+            messages.error(request, "Semester is required.")
+            return redirect('dashboard')
+            
+        try:
+            semester = int(semester)
+        except ValueError:
+            messages.error(request, "Invalid semester value.")
+            return redirect('dashboard')
+            
+        if faculty_id:
+            from users.models import FacultyProfile
+            faculty_profile = get_object_or_404(FacultyProfile, id=faculty_id, department=department)
+            # Update or create the ClassIncharge assignment
+            ClassIncharge.objects.update_or_create(
+                department=department,
+                semester=semester,
+                defaults={'faculty': faculty_profile}
+            )
+            messages.success(request, f"Faculty '{faculty_profile.user.first_name or faculty_profile.user.username}' assigned as Class Incharge for Semester {semester}.")
+        else:
+            # Remove ClassIncharge for that semester
+            ClassIncharge.objects.filter(department=department, semester=semester).delete()
+            messages.success(request, f"Class Incharge removed for Semester {semester}.")
+            
+    return redirect('dashboard')
+
+
+@login_required
+def manage_student_class(request, student_id):
+    from users.models import StudentProfile
+    from academics.models import ClassIncharge, StudentActivity, CourseEnrollment, ExamResult
+    
+    student = get_object_or_404(StudentProfile, id=student_id)
+    user = request.user
+    
+    # Access Control: Only HOD of the student's department OR assigned Class Incharge of student's current semester/dept
+    can_manage = False
+    if user.role == 'hod' and user.hod_profile.department == student.department:
+        can_manage = True
+    elif user.role == 'faculty':
+        is_incharge = ClassIncharge.objects.filter(
+            faculty=user.faculty_profile,
+            department=student.department,
+            semester=student.current_semester
+        ).exists()
+        if is_incharge:
+            can_manage = True
+            
+    if not can_manage:
+        messages.error(request, "Access denied. You are not authorized to manage this student.")
+        return redirect('dashboard')
+        
+    enrollments = CourseEnrollment.objects.filter(student=student, semester=student.current_semester).select_related('course')
+    exam_results = ExamResult.objects.filter(enrollment__in=enrollments).select_related('enrollment__course')
+    activities = StudentActivity.objects.filter(student=student).select_related('logged_by__user').order_by('-date')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'update_academics':
+            # Update student overall semester promotion
+            new_semester = request.POST.get('current_semester')
+            if new_semester:
+                try:
+                    student.current_semester = int(new_semester)
+                    student.save()
+                except ValueError:
+                    pass
+            
+            # Update each course enrollment grades and attendance
+            for enroll in enrollments:
+                att_val = request.POST.get(f'attendance_{enroll.id}')
+                grade_val = request.POST.get(f'grade_{enroll.id}')
+                if att_val is not None:
+                    try:
+                        enroll.attendance_percentage = float(att_val)
+                    except ValueError:
+                        pass
+                if grade_val is not None:
+                    enroll.grade = grade_val.strip()
+                enroll.save()
+            messages.success(request, f"Academic details updated for {student.user.first_name or student.user.username}.")
+            return redirect('manage_student_class', student_id=student.id)
+            
+        elif action == 'add_marks':
+            enrollment_id = request.POST.get('enrollment_id')
+            assessment_name = request.POST.get('assessment_name')
+            max_marks = request.POST.get('max_marks')
+            marks_obtained = request.POST.get('marks_obtained')
+            
+            if enrollment_id and assessment_name and max_marks and marks_obtained:
+                enroll = get_object_or_404(CourseEnrollment, id=enrollment_id, student=student)
+                try:
+                    ExamResult.objects.create(
+                        enrollment=enroll,
+                        assessment_name=assessment_name.strip(),
+                        max_marks=float(max_marks),
+                        marks_obtained=float(marks_obtained)
+                    )
+                    messages.success(request, f"Marks added for {enroll.course.code}.")
+                except ValueError:
+                    messages.error(request, "Invalid marks values.")
+            else:
+                messages.error(request, "Please fill out all fields to add marks.")
+            return redirect('manage_student_class', student_id=student.id)
+            
+        elif action == 'delete_marks':
+            result_id = request.POST.get('result_id')
+            if result_id:
+                result = get_object_or_404(ExamResult, id=result_id, enrollment__student=student)
+                result.delete()
+                messages.success(request, "Exam result entry deleted.")
+            return redirect('manage_student_class', student_id=student.id)
+            
+        elif action == 'add_activity':
+            activity_type = request.POST.get('activity_type')
+            description = request.POST.get('description')
+            date_str = request.POST.get('date', str(datetime.date.today()))
+            
+            if activity_type and description:
+                try:
+                    date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    date = datetime.date.today()
+                
+                logged_by = user.faculty_profile if user.role == 'faculty' else None
+                StudentActivity.objects.create(
+                    student=student,
+                    date=date,
+                    activity_type=activity_type.strip(),
+                    description=description.strip(),
+                    logged_by=logged_by
+                )
+                messages.success(request, "Daily activity logged successfully.")
+            else:
+                messages.error(request, "Please fill out all activity fields.")
+            return redirect('manage_student_class', student_id=student.id)
+            
+        elif action == 'delete_activity':
+            activity_id = request.POST.get('activity_id')
+            if activity_id:
+                act = get_object_or_404(StudentActivity, id=activity_id, student=student)
+                act.delete()
+                messages.success(request, "Daily activity entry deleted.")
+            return redirect('manage_student_class', student_id=student.id)
+            
+    context = {
+        'student': student,
+        'enrollments': enrollments,
+        'exam_results': exam_results,
+        'activities': activities,
+        'today': datetime.date.today().strftime("%Y-%m-%d"),
+    }
+    return render(request, 'academics/manage_student.html', context)
