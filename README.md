@@ -265,49 +265,6 @@ http://127.0.0.1:8000
 
 ---
 
-# 📷 Screenshots
-
-### 🏠 Home Page
-
-_Add Screenshot_
-
----
-
-### 🔐 Login
-
-_Add Screenshot_
-
----
-
-### 📊 Dashboard
-
-_Add Screenshot_
-
----
-
-### 👤 Student Profile
-
-_Add Screenshot_
-
----
-
-### 📁 Portfolio
-
-_Add Screenshot_
-
----
-
-### 👨‍🏫 Faculty Verification
-
-_Add Screenshot_
-
----
-
-### 💼 Placement Dashboard
-
-_Add Screenshot_
-
----
 
 # 🔮 Future Enhancements
 
