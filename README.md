@@ -2,6 +2,8 @@
 
 EduSphere is a Unified Academic, Portfolio & Career Development Platform built using Django.
 
+Live Link: https://edusphere-zwqh.onrender.com
+
 ## Features
 
 - Student Dashboard
